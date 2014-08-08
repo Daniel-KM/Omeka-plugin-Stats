@@ -1,0 +1,637 @@
+# # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Daniel Berthereau <Daniel.fr@Berthereau.net>, 2014.
+msgid ""
+msgstr ""
+"Project-Id-Version: Stats\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-08-08 07:46+0200\n"
+"PO-Revision-Date: 2014-08-08 07:46+0100\n"
+"Last-Translator: Daniel Berthereau <Daniel.fr@Berthereau.net>\n"
+"Language-Team: French <https://www.transifex.com/projects/p/omeka/>\n"
+"Language: Français\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.4\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: views/public/browse/by-stat.php:2 views/public/browse/by-field.php:2
+#: views/admin/browse/by-stat.php:2 views/admin/browse/by-field.php:2
+#, php-format
+msgid "Stats (%s total)"
+msgstr "Stats (%s total)"
+
+#: views/public/browse/by-stat.php:22 views/admin/browse/by-stat.php:21
+msgid "Page"
+msgstr "Page"
+
+#: views/public/browse/by-stat.php:23 views/public/browse/by-field.php:27
+#: views/admin/browse/by-stat.php:22 views/admin/browse/by-field.php:26
+msgid "Hits"
+msgstr "Vues"
+
+#: views/public/browse/by-stat.php:24 views/admin/browse/by-stat.php:25
+msgid "Dedicated Record"
+msgstr "Notice dédiée"
+
+#: views/public/browse/by-stat.php:25 views/admin/browse/by-stat.php:26
+msgid "Record Type"
+msgstr "Type de notice"
+
+#: views/public/browse/by-stat.php:26 views/admin/browse/by-stat.php:27
+msgid "Date"
+msgstr "Date"
+
+#: views/public/browse/by-stat.php:66 views/admin/browse/by-stat.php:73
+msgid "There is no stat yet."
+msgstr "Il n’y a pas encore de stat."
+
+#: views/public/browse/by-stat.php:68 views/admin/browse/by-stat.php:75
+#, php-format
+msgid "The query searched %s rows and returned no results."
+msgstr "La requête a recherché dans %s lignes et n’a trouvé aucun résultat."
+
+#: views/public/browse/by-stat.php:69 views/public/browse/by-field.php:51
+#: views/admin/browse/by-stat.php:76 views/admin/browse/by-field.php:50
+msgid "See all stats."
+msgstr "Voir toutes les stats."
+
+#: views/public/browse/by-field.php:15
+#, php-format
+msgid "By %s"
+msgstr "Par %s"
+
+#: views/public/browse/by-field.php:16 views/admin/browse/by-field.php:15
+#, php-format
+msgid "[%d filled values / %d total hits]"
+msgstr "[%d valeurs enregistrées / %d vues totales]"
+
+#: views/public/browse/by-field.php:48 views/admin/browse/by-field.php:47
+msgid "There is no hit yet."
+msgstr "Il n’y a pas encore de vue."
+
+#: views/public/browse/by-field.php:50 views/admin/browse/by-field.php:49
+#, php-format
+msgid "The query searched %s hits and returned no results."
+msgstr "La requête a recherché dans %s vues et n’a trouvé aucun résultat."
+
+#: views/public/summary/index.php:2 views/admin/summary/index.php:2
+#: StatsPlugin.php:313 StatsPlugin.php:335 StatsPlugin.php:407
+#: StatsPlugin.php:420 StatsPlugin.php:457
+msgid "Stats"
+msgstr "Stats"
+
+#: views/public/summary/index.php:13 StatsPlugin.php:460
+#, php-format
+msgid "Total Hits: %d"
+msgstr "Vues totales : %d"
+
+#: views/public/summary/index.php:15
+#, php-format
+msgid "Today: %d"
+msgstr "Aujourd’hui : %d"
+
+#: views/public/summary/index.php:19 views/admin/summary/index.php:24
+msgid "History"
+msgstr "Historique"
+
+#: views/public/summary/index.php:31 views/admin/summary/index.php:36
+msgid "Current"
+msgstr "Actuellement"
+
+#: views/public/summary/index.php:43 views/admin/summary/index.php:48
+msgid "Rolling Period"
+msgstr "Période glissante"
+
+#: views/public/summary/index.php:56 views/admin/summary/index.php:61
+#: StatsPlugin.php:482
+msgid "Most viewed public pages"
+msgstr "Pages publiques les plus vues"
+
+#: views/public/summary/index.php:58 views/public/summary/index.php:78
+#: views/admin/summary/index.php:63 views/admin/summary/index.php:85
+#: views/shared/common/most-frequents.php:2 StatsPlugin.php:484
+#: StatsPlugin.php:504
+msgid "None"
+msgstr "Aucune"
+
+#: views/public/summary/index.php:63 views/public/summary/index.php:83
+#: views/shared/common/most-frequents.php:7 StatsPlugin.php:490
+#: StatsPlugin.php:509
+#, php-format
+msgid "%s (%d views)"
+msgstr "%s (%d vues)"
+
+#: views/public/summary/index.php:76 views/admin/summary/index.php:83
+msgid "Most viewed public records"
+msgstr "Notices publiques les plus vues"
+
+#: views/public/summary/index.php:95 views/admin/summary/index.php:104
+msgid "Most frequent external referrers"
+msgstr "Référents externes les plus fréquents"
+
+#: views/public/summary/index.php:96 views/admin/summary/index.php:105
+msgid "Most frequent queries"
+msgstr "Requêtes les plus fréquentes"
+
+#: views/public/summary/index.php:97 views/admin/summary/index.php:106
+msgid "Most frequent accepted languages"
+msgstr "Langues acceptées les plus fréquentes"
+
+#: views/public/summary/index.php:98 views/admin/summary/index.php:107
+msgid "Most frequent browsers"
+msgstr "Navigateurs les plus fréquents"
+
+#: views/admin/browse/by-stat.php:23
+#: views/admin/plugins/stats-config-form.php:91
+#: views/admin/plugins/stats-config-form.php:109
+#: views/admin/plugins/stats-config-form.php:182
+msgid "Anonymous"
+msgstr "Anonymes"
+
+#: views/admin/browse/by-stat.php:24
+msgid "Identified"
+msgstr "Identifié"
+
+#: views/admin/browse/by-field.php:14
+#, php-format
+msgid "By %s (%s)"
+msgstr "Par %s (%s)"
+
+#: views/admin/plugins/stats-config-form.php:1
+msgid "Rights and Roles"
+msgstr "Droits et rôles"
+
+#: views/admin/plugins/stats-config-form.php:4
+msgid "Table of Rights"
+msgstr "Table des droits"
+
+#: views/admin/plugins/stats-config-form.php:9
+msgid "Select access rights for each stats page and each role."
+msgstr "Choisir les droits d’accès pour chaque page et chaque rôle."
+
+#: views/admin/plugins/stats-config-form.php:10
+msgid ""
+"If \"public\" is checked, all people will have access to the selected data."
+msgstr ""
+"Si \"public\" est coché, tout le monde pourra accéder aux données choisies."
+
+#: views/admin/plugins/stats-config-form.php:11
+#, fuzzy, php-format
+msgid "%sWarning%s: Shortcodes, helpers and hooks doesn't follow any rule."
+msgstr ""
+"%sAttention%s : Les shortcodes, helpers et hooks (crochets) ne suivent "
+"aucune règle."
+
+#: views/admin/plugins/stats-config-form.php:16
+msgid "View Summary"
+msgstr "Voir le sommaire"
+
+#: views/admin/plugins/stats-config-form.php:21
+msgid "Browse by Page"
+msgstr "Lister par page"
+
+#: views/admin/plugins/stats-config-form.php:26
+msgid "Browse by Record"
+msgstr "Lister par notice"
+
+#: views/admin/plugins/stats-config-form.php:31
+msgid "Browse by Field"
+msgstr "Lister par champ"
+
+#: views/admin/plugins/stats-config-form.php:43
+msgid "Public"
+msgstr "Public"
+
+#: views/admin/plugins/stats-config-form.php:76
+msgid "Browse Stats"
+msgstr "Naviguer dans les stats"
+
+#: views/admin/plugins/stats-config-form.php:78
+msgid "These options allow to restrict stats according to status of users."
+msgstr ""
+"Ces options permettent de réstreindre les stats selon les utilisateurs."
+
+#: views/admin/plugins/stats-config-form.php:79
+msgid ""
+"They are used with hooks, helpers and shortcodes, not with direct queries."
+msgstr ""
+"Elles sont utilisées avec les hooks (crochets), les helpers et les "
+"shortcodes, mais pas avec les reqùêtes directes."
+
+#: views/admin/plugins/stats-config-form.php:83
+msgid "User status for admin pages"
+msgstr "Type d’utilisateur pour les pages admin"
+
+#: views/admin/plugins/stats-config-form.php:90
+#: views/admin/plugins/stats-config-form.php:108
+msgid "Total hits"
+msgstr "Total des vues"
+
+#: views/admin/plugins/stats-config-form.php:92
+#: views/admin/plugins/stats-config-form.php:110
+msgid "Identified users"
+msgstr "Utilisateurs identifiés"
+
+#: views/admin/plugins/stats-config-form.php:95
+msgid "Choose the default status of users for stats in admin pages."
+msgstr ""
+"Choisir le type d’utilisateur par défaut pour les stats dans les pages admin."
+
+#: views/admin/plugins/stats-config-form.php:101
+msgid "User status for public pages"
+msgstr "Type d’utilisateur pour les pages publiques"
+
+#: views/admin/plugins/stats-config-form.php:113
+msgid "Choose the status of users to restrict stats in public pages."
+msgstr ""
+"Choisir le type d’utilisateur pour restreindre les stats dans les pages "
+"publiques."
+
+#: views/admin/plugins/stats-config-form.php:119
+msgid "Results Per Page (admin)"
+msgstr "Résultats par page (admin)"
+
+#: views/admin/plugins/stats-config-form.php:126
+msgid ""
+"Limit the number of results displayed per page in the administrative "
+"interface."
+msgstr ""
+"Limite du nombre de résultats affichés par page dans l'interface "
+"d'administration. "
+
+#: views/admin/plugins/stats-config-form.php:133
+msgid "Results Per Page (public)"
+msgstr "Résultats par page (public)"
+
+#: views/admin/plugins/stats-config-form.php:140
+msgid "Limit the number of results displayed per page in the public interface."
+msgstr ""
+"Limite du nombre de résultats affichés par page dans l'interface publique. "
+
+#: views/admin/plugins/stats-config-form.php:146
+msgid "Display by Hooks"
+msgstr "Affichage par les hooks (crochets)"
+
+#: views/admin/plugins/stats-config-form.php:149
+msgid "Pages where hits are shown via hooks"
+msgstr "Pages où les stats sont affichées via les crochets"
+
+#: views/admin/plugins/stats-config-form.php:165
+msgid ""
+"These options allow to parameter the pages where the htis are displayed."
+msgstr ""
+"Ces options permettent de paramêtrer les pages sur lesquelles les stats sont "
+"affichées."
+
+#: views/admin/plugins/stats-config-form.php:166
+msgid ""
+"In any case, this is the theme that manages last if hits are displayed or "
+"not."
+msgstr ""
+"Dans tous les cas, c'est le thème qui gère en dernier lieu si les stats sont "
+"affichées ou non."
+
+#: views/admin/plugins/stats-config-form.php:172
+msgid "Privacy"
+msgstr "Vie privée"
+
+#: views/admin/plugins/stats-config-form.php:175
+msgid "Level of Privacy"
+msgstr "Niveau de vie privée"
+
+#: views/admin/plugins/stats-config-form.php:183
+msgid "Hashed IP"
+msgstr "IP hachée"
+
+#: views/admin/plugins/stats-config-form.php:184
+msgid "Partial IP (first hex)"
+msgstr "IP partielle (premier hex)"
+
+#: views/admin/plugins/stats-config-form.php:185
+msgid "Partial IP (first 2 hexs)"
+msgstr "IP partielle (deux premiers hexs)"
+
+#: views/admin/plugins/stats-config-form.php:186
+msgid "Partial IP (first 3 hexs)"
+msgstr "IP partielle (trois premiers hexs)"
+
+#: views/admin/plugins/stats-config-form.php:187
+msgid "Clear IP"
+msgstr "IP claire"
+
+#: views/admin/plugins/stats-config-form.php:190
+msgid "Choose the level of privacy (default: hashed IP)."
+msgstr "Choisir le niveau de vie privée (défaut : IP hachée)."
+
+#: views/admin/plugins/stats-config-form.php:191
+msgid "A change applies only to new hits."
+msgstr "Le changement s'appliquera seulement aux nouvelles vues."
+
+#: views/admin/summary/index.php:12
+#, php-format
+msgid "Total Hits: %d [%d anonymous / %d identified]"
+msgstr "Total des vues : %d [%d anonymes / %d identifiés]"
+
+#: views/admin/summary/index.php:17
+#, php-format
+msgid "Today: %d [%d / %d]"
+msgstr "Aujourd’hui : %d [%d / %d]"
+
+#: views/admin/summary/index.php:68 views/admin/summary/index.php:90
+#, php-format
+msgid "%s (%d views [%d / %d])"
+msgstr "%s (%d vues [%d / %d])"
+
+#: views/shared/common/quick-filters.php:2
+#: views/shared/common/quick-filters.php:4
+msgid "Quick Filter"
+msgstr "Filtre rapide"
+
+#: views/shared/common/quick-filters.php:9
+#: views/shared/common/quick-filters.php:15
+msgid "View All"
+msgstr "Tout voir"
+
+#: views/shared/common/quick-filters.php:10
+msgid "With record"
+msgstr "Avec notice"
+
+#: views/shared/common/quick-filters.php:11
+msgid "Without record"
+msgstr "Sans notice"
+
+#: views/shared/common/quick-filters.php:16
+msgid "By Item"
+msgstr "Par document"
+
+#: views/shared/common/quick-filters.php:17
+msgid "By Collection"
+msgstr "Par collection"
+
+#: views/shared/common/quick-filters.php:18
+msgid "By File"
+msgstr "Par fichier"
+
+#: views/shared/common/quick-filters.php:20
+msgid "By Simple Page"
+msgstr "Par page simple"
+
+#: views/shared/common/quick-filters.php:23
+msgid "By Exhibit"
+msgstr "Par exposition"
+
+#: views/shared/common/quick-filters.php:24
+msgid "By Exhibit Page"
+msgstr "Par page d’exposition"
+
+#: views/shared/common/quick-filters.php:29
+msgid "Referrers"
+msgstr "Référents"
+
+#: views/shared/common/quick-filters.php:30
+#: controllers/BrowseController.php:131
+msgid "Queries"
+msgstr "Requêtes"
+
+#: views/shared/common/quick-filters.php:31
+msgid "Languages"
+msgstr "Langues"
+
+#: views/shared/common/quick-filters.php:32
+#: controllers/BrowseController.php:132
+msgid "Browsers"
+msgstr "Navigateurs"
+
+#: views/shared/common/stats-nav.php:6
+msgid "Summary"
+msgstr "Sommaire"
+
+#: views/shared/common/stats-nav.php:14
+msgid "By Page"
+msgstr "Par page"
+
+#: views/shared/common/stats-nav.php:22
+msgid "By Record"
+msgstr "Par notice"
+
+#: views/shared/common/stats-nav.php:30
+msgid "By Field"
+msgstr "Par champ"
+
+#: views/shared/common/stats-single.php:7
+msgid "No specific record"
+msgstr "Pas de notice spécifique"
+
+#: views/shared/common/stats-single.php:3
+#, php-format
+msgid "%s (%s views): %s [%s]"
+msgstr "%s (%s vues) : %s [%s]"
+
+#: views/shared/common/stats-value.php:4
+msgid "Not viewed"
+msgstr "Non vue"
+
+#: views/shared/common/stats-value.php:6
+#, php-format
+msgid "Position: %s (%s views)"
+msgstr "Position : %s (%s vues)"
+
+#: views/helpers/Stats.php:162
+msgid "None."
+msgstr "Aucune."
+
+#: views/helpers/Stats.php:238 StatsPlugin.php:510
+msgid "Deleted"
+msgstr "Supprimé"
+
+#: views/helpers/Stats.php:273
+msgid "Simple Page"
+msgstr "Page simple"
+
+#: views/helpers/Stats.php:274
+msgid "Exhibit Page"
+msgstr "Page d’exposition"
+
+#: views/helpers/Stats.php:291
+msgid "all users"
+msgstr "tous les utilisateurs"
+
+#: views/helpers/Stats.php:294
+msgid "anonymous users"
+msgstr "utilisateurs anonymes"
+
+#: views/helpers/Stats.php:297
+msgid "identified users"
+msgstr "utilisateurs identifiés"
+
+#: controllers/BrowseController.php:130
+msgid "External Referrers"
+msgstr "Référents externes"
+
+#: controllers/BrowseController.php:133
+msgid "Accepted Languages"
+msgstr "Langues acceptées"
+
+#: controllers/SummaryController.php:43
+msgid "Last year"
+msgstr "Année dernière"
+
+#: controllers/SummaryController.php:46
+msgid "Last month"
+msgstr "Mois dernier"
+
+#: controllers/SummaryController.php:49
+msgid "Last week"
+msgstr "Semaine dernière"
+
+#: controllers/SummaryController.php:52
+msgid "Yesterday"
+msgstr "Hier"
+
+#: controllers/SummaryController.php:56
+msgid "This year"
+msgstr "Cette année"
+
+#: controllers/SummaryController.php:58
+msgid "This month"
+msgstr "Ce mois"
+
+#: controllers/SummaryController.php:60
+msgid "This week"
+msgstr "Cette semaine"
+
+#: controllers/SummaryController.php:62
+msgid "This day"
+msgstr "Ce jour"
+
+#: controllers/SummaryController.php:67 StatsPlugin.php:466
+msgid "Last 24 hours"
+msgstr "Dernières 24 heures"
+
+#: controllers/SummaryController.php:67
+#, php-format
+msgid "Last %s days"
+msgstr "Derniers %s jours"
+
+#: models/Stat.php:335
+msgid "Type should be \"page\" or \"record\"."
+msgstr "Le type doit être \"page\" ou \"record\"."
+
+#: models/Hit.php:496
+msgid "Url is required."
+msgstr "L'Url est requise."
+
+#: StatsPlugin.php:324
+#, php-format
+msgid "Views: %d (position %d)"
+msgstr "Vues : %d (position %d)"
+
+#: StatsPlugin.php:349
+#, php-format
+msgid "Views: %d (%d anonymous / %d identified users)"
+msgstr "Vues : %d (%d anonymes / %d utilisateurs identifiés)"
+
+#: StatsPlugin.php:355
+#, php-format
+msgid "Position: %d (%d anonymous / %d identified users)"
+msgstr "Position : %d (%d anonymes / %d utilisateurs identifiés)"
+
+#: StatsPlugin.php:439
+msgid "hits"
+msgstr "vues"
+
+#: StatsPlugin.php:464
+msgid "Last 30 days"
+msgstr "30 derniers jours"
+
+#: StatsPlugin.php:465
+msgid "Last 7 days"
+msgstr "7 derniers jours"
+
+#: StatsPlugin.php:502
+msgid "Most viewed public item"
+msgstr "Document public le plus vu"
+
+#: StatsPlugin.php:517
+msgid "Most frequent fields"
+msgstr "Champs les plus fréquents"
+
+#: StatsPlugin.php:520
+msgid "Referrer"
+msgstr "Référent"
+
+#: StatsPlugin.php:521
+msgid "Query"
+msgstr "Requête"
+
+#: StatsPlugin.php:522
+msgid "User Agent"
+msgstr "Agent utilisateur"
+
+#: StatsPlugin.php:523
+msgid "Accepted Language"
+msgstr "Langue acceptée"
+
+#: StatsPlugin.php:528
+#, php-format
+msgid "%s: None"
+msgstr "%s : Aucun"
+
+#: StatsPlugin.php:532
+#, php-format
+msgid "%s: %s (%d%%)"
+msgstr "%s : %s (%d%%)"
+
+#~ msgid "Stats Summary"
+#~ msgstr "Stats - Sommaire"
+
+#~ msgid "Allow Public to Browse"
+#~ msgstr "Autoriser le public à consulter"
+
+#~ msgid "Allow everybody to browse stats."
+#~ msgstr "Autoriser tout le monde à naviguer dans les stats."
+
+#~ msgid "Roles that can Browse"
+#~ msgstr "Rôles qui peuvent consulter"
+
+#~ msgid "Most frequent user agents"
+#~ msgstr "Agents utilisateurs les plus fréquents"
+
+#~ msgid "User Agents"
+#~ msgstr "Agents utilisateurs"
+
+#~ msgid "Stat types"
+#~ msgstr "Types de stat"
+
+#~ msgid ""
+#~ "These options allow to set the default type of hits count that is "
+#~ "displayed."
+#~ msgstr ""
+#~ "Ces options permettent de définir un type par défaut pour le nombre de "
+#~ "vues qui est affiché."
+
+#~ msgid "This can be modified by the theme"
+#~ msgstr "Cela peut être modifié par le theme."
+
+#~ msgid "Keep stats of deleted records"
+#~ msgstr "Conserver les stats des notices supprimées"
+
+#~ msgid "Warning: if unchecked, all stats of deleted records will be removed."
+#~ msgstr ""
+#~ "Attention : si décoché, toutes les stats des notices supprimées seront "
+#~ "effacées."
+
+#~ msgid "undetermined"
+#~ msgstr "indéterminé"
+
+#~ msgid "Anonymous: %d (position %d)"
+#~ msgstr "Anonymes : %d (position %d)"
+
+#~ msgid "Identified: %d (position %d)"
+#~ msgstr "Utilisateurs identifiés : %d (position %d)"
+
+#~ msgid "none"
+#~ msgstr "aucune"

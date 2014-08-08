@@ -1,0 +1,21 @@
+.stats-hover {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 150px;
+}
+.stats-hover:hover {
+    overflow: visible;
+    position: absolute;
+    white-space: normal;
+    width: 150px;
+}
+.odd .stats-hover:hover {
+    background-color: #fff;
+}
+.even .stats-hover:hover {
+    background-color: #f3f3e7;
+}
+.stats-hover:hover+div {
+    margin-top: 20px;
+}
