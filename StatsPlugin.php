@@ -26,6 +26,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         'config_form',
         'config',
         'define_acl',
+        'define_routes',
         'public_head',
         'admin_items_show_sidebar',
         'admin_collections_show_sidebar',
@@ -57,11 +58,13 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         'stats_public_allow_summary' => false,
         'stats_public_allow_browse_pages' => false,
         'stats_public_allow_browse_records' => false,
+        'stats_public_allow_browse_downloads' => false,
         'stats_public_allow_browse_fields' => false,
         // With roles, in particular if Guest User is installed.
         'stats_roles_summary' => 'a:1:{i:0;s:5:"admin";}',
         'stats_roles_browse_pages' => 'a:1:{i:0;s:5:"admin";}',
         'stats_roles_browse_records' => 'a:1:{i:0;s:5:"admin";}',
+        'stats_roles_browse_downloads' => 'a:1:{i:0;s:5:"admin";}',
         'stats_roles_browse_fields' => 'a:1:{i:0;s:5:"admin";}',
         // Display.
         'stats_default_user_status_admin' => 'hits',
@@ -206,6 +209,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                 'stats_roles_summary',
                 'stats_roles_browse_pages',
                 'stats_roles_browse_records',
+                'stats_roles_browse_downloads',
                 'stats_roles_browse_fields',
                 'stats_display_by_hooks',
             ) as $posted) {
@@ -246,6 +250,11 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                     'roles' => 'stats_roles_browse_records',
                     'privileges' => 'by-record',
                 ),
+                'browse_downloads' => array(
+                    'public' => 'stats_public_allow_browse_downloads',
+                    'roles' => 'stats_roles_browse_downloads',
+                    'privileges' => 'by-download',
+                ),
                 'browse_fields' => array(
                     'public' => 'stats_public_allow_browse_fields',
                     'roles' => 'stats_roles_browse_fields',
@@ -262,7 +271,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                     $acl->allow(null, $resource, $right['privileges']);
                 }
                 else {
-                    $roles = unserialize(get_option($right['roles']));
+                    $roles = get_option($right['roles']) ? unserialize(get_option($right['roles'])) : array();
                     // Check that all the roles exist, in case a plugin-added role has
                     // been removed (e.g. GuestUser).
                     foreach ($roles as $role) {
@@ -273,6 +282,19 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                 }
             }
         }
+    }
+
+    /**
+     * Defines route for direct download count.
+     */
+    public function hookDefineRoutes($args)
+    {
+        // ".htaccess" always redirects direct downloads to a public url.
+        if (is_admin_theme()) {
+            return;
+        }
+
+        $args['router']->addConfig(new Zend_Config_Ini(dirname(__FILE__) . '/routes.ini', 'routes'));
     }
 
     /**
@@ -513,6 +535,22 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                 }
             }
 
+            if (is_allowed('Stats_Browse', 'by-download')) {
+                $stats = $tableStat->getMostViewedDownloads($userStatus, 1);
+                $html .= sprintf('<h4><a href="%s">%s</a></h4>', url('/stats/browse/by-download'), __('Most downloaded file'));
+                if (empty($stats)) {
+                    $html .= '<p>' . __('None') . '</p>';
+                }
+                else {
+                    $stat = reset($stats);
+                    $html .= '<ul>';
+                    $html .= __('%s (%d downloads)',
+                        $stat->Record ? link_to_file_show(array(), null, $stat->Record) : __('Deleted'),
+                        $stat->$userStatus);
+                    $html .= '</ul>';
+                }
+            }
+
             if (is_allowed('Stats_Browse', 'by-field')) {
                 $html .= sprintf('<h4><a href="%s">%s</a></h4>', url('/stats/browse/by-field'), __('Most frequent fields'));
                 $html .= '<ul>';
@@ -554,9 +592,9 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
     public function filterStatsRecord($records, $args)
     {
         if (empty($records)) {
-            $module = $args['module'];
-            $controller = $args['controller'];
-            $action = $args['action'];
+            $module = isset($args['module']) ? $args['module'] : 'default';
+            $controller = isset($args['controller']) ? $args['controller'] : 'index';
+            $action = isset($args['action']) ? $args['action'] : 'index';
             switch ($module) {
                 case 'default':
                     if ($action == 'show') {
@@ -612,8 +650,13 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Search by record.
         if (!empty($recordId)) {
-            $record = array('record_type' => $recordType, 'record_id' => $recordId);
-            $result = $view->stats()->total_record($record);
+            if ($recordType == 'download') {
+                $result = $view->stats()->total_download($recordId);
+            }
+            else {
+                $record = array('record_type' => $recordType, 'record_id' => $recordId);
+                $result = $view->stats()->total_record($record);
+            }
         }
         // Search by record type.
         elseif (!empty($recordType)) {
@@ -656,8 +699,13 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Search by record.
         if (!empty($recordId)) {
-            $record = array('record_type' => $recordType, 'record_id' => $recordId);
-            $result = $view->stats()->position_record($record);
+            if ($recordType == 'download') {
+                $result = $view->stats()->position_download($recordId);
+            }
+            else {
+                $record = array('record_type' => $recordType, 'record_id' => $recordId);
+                $result = $view->stats()->position_record($record);
+            }
         }
         // Search by url.
         else {
@@ -685,14 +733,14 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $html = '';
 
         $result = null;
+        $type = isset($args['type']) ? $args['type'] : null;
         $sort = $this->_getArgumentSort($args);
         $limit = isset($args['number']) ? (integer) $args['number'] : 10;
         $offset = isset($args['offset']) ? (integer) $args['offset'] : null;
-        $recordType = isset($args['record_type']) ? $args['record_type'] : null;
 
         // Search by record type.
-        if (isset($args['record_type'])) {
-            $html .= $view->stats()->viewed_records($recordType, $sort, null, $limit, $offset, true);
+        if (isset($args['type'])) {
+            $html .= $view->stats()->viewed_records($type, $sort, null, $limit, $offset, true);
         }
         // Search in all pages.
         else {

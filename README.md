@@ -18,6 +18,7 @@ It has some advantages over them:
 plugins to get stats for a specific record type);
 - informative (query, referrer, user agent and language are saved; all stats can
 be browsed by public);
+- count of direct download of files;
 - full control of pruducted data;
 - respect of privacy (if wanted!).
 
@@ -33,6 +34,23 @@ Installation
 Uncompress files and rename plugin folder "Stats".
 
 Then install it like any other Omeka plugin and follow the config instructions.
+
+To count direct download of files, you need to add a line in the beginning off
+`.htaccess`:
+
+```
+RewriteEngine on
+RewriteRule ^files/original/(.*)$ http://www.example.com/download/files/original/$1 [NC,L]
+```
+
+You can adapt `routes.ini` as you wish too.
+
+If you use the anti-hotlinking feature of [Archive Repertory] to avoid bandwidth
+theft, you should keep its rule. Stats for direct downloads of files will be
+automatically added.
+
+You can count fullsize files too, but this is not recommended, because in the
+majority of themes, hits may increase even when a simple page is opened.
 
 
 Browse Stats
@@ -84,26 +102,31 @@ echo $this->stats()->text_page(current_url());
 [stats_position url="/items/search"]
 [stats_position record_type="Collection" record_id=1]
 [stats_vieweds]
-[stats_vieweds record_type="none"]
-[stats_vieweds order="last" record_type="Item"]
-[stats_vieweds order="most" record_type="Collection" number=1]
+[stats_vieweds type="none"]
+[stats_vieweds order="last" type="Item"]
+[stats_vieweds order="most" type="download" number=1]
 ```
 
 All arguments are optional. Arguments are:
 * For `stats_total` and `stats_position`
-  - `record_type`: one or multiple Omeka record type, e.g. `Item` or
-  `Collection`.
+  - `record_type`: one or multiple Omeka record type, e.g. "Item" or
+  "Collection". For files, the record type may be "File" for the "/files/show/#" page
+  of the record, or "download" fçr the direct download. Alternatively, the
+  url can be used, but without [Archive Repertory], this is an obfuscated one.
   - `record_id`: the identifier of the record (not the slug if any). It implies
   one specific `record_type` and only one. With `stats_position`, `record_id` is
   required when searching by record.
   - `url`: the url of a specific page. A full url is not needed; a partial Omeka
   url without web root is enough (in any case, web root is removed
-  automatically). This argument is not used if `record_type` argument is set.
+  automatically). This argument is used too to know the total or the position of
+  a file. This argument is not used if `record_type` argument is set.
 
 * For `stats_vieweds`
-  - `record_type`: one or multiple Omeka record type, e.g. `Item` or
-  `Collection`. If empty or "all", it returns only pages with a dedicated record.
-  If "none", it returns pages without dedicated record.
+  - `type`: If "page" or "download", most or last viewed pages or downloaded
+  files will be returned. If empty or "all", it returns only pages with a
+  dedicated record. If "none", it returns pages without dedicated record. If one
+  or multiple Omeka record type, e.g. "Item" or "Collection", most or last
+  records of this record type will be returned.
   - `sort`: can be "most" (default) or "last".
   - `number`: number of records to return (10 by default).
   - `offset`: offset to set page to return.
@@ -122,7 +145,6 @@ Notes
 - Only pages of the public theme are counted.
 - Reload of a page generates a new hit (no check).
 - IP can be hashed or not saved for privacy.
-- Currently, direct downloads of original files are not counted.
 - Currently, screen sizes is not detected.
 
 
@@ -183,6 +205,7 @@ Copyright
 [Google Analytics]: http://www.google.com/analytics
 [LibreOffice]: https://www.documentfoundation.org
 [Shortcodes]: http://omeka.org/codex/Shortcodes
+[Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
 [Stats issues]: https://github.com/Daniel-KM/Stat/issues
 [CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"

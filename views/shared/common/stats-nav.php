@@ -25,6 +25,14 @@
             'module' => 'stats',
         );
     }
+    if (is_allowed('Stats_Browse', 'by-download')) {
+        $navArray[] = array(
+            'label' => __('By Download'),
+            'action' => 'by-download',
+            'controller' => 'browse',
+            'module' => 'stats',
+        );
+    }
     if (is_allowed('Stats_Browse', 'by-field')) {
         $navArray[] = array(
             'label' => __('By Field'),

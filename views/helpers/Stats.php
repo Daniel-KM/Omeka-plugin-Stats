@@ -1,6 +1,10 @@
 <?php
 /**
  * Helper to get some public stats.
+ *
+ * @internal There is no difference between total of page or download, because
+ * each url is unique, but there are differences between positions and viewed
+ * pages and downloaded files lists.
  */
 class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
 {
@@ -24,6 +28,26 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function stats()
     {
         return $this;
+    }
+
+    /**
+     * Hit a new page (to use only with external plugins for not managed urls).
+     *
+     * No filter is applied to get the eventual record.
+     *
+     * @param string $url Url
+     * @param Record|array $record If array, contains record type and record id.
+     */
+    public function new_hit($url, $record = null)
+    {
+        $record = $this->checkAndPrepareRecord($record);
+        $hit = new Hit;
+        $hit->setCurrentRequest();
+        $hit->url = $this->checkAndCleanUrl($url);
+        $hit->record_type = $record['record_type'];
+        $hit->record_id = $record['record_id'];
+        $hit->setCurrentUser();
+        $hit->save();
     }
 
     /**
@@ -66,6 +90,19 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     }
 
     /**
+     * Get the count of hits of the download.
+     *
+     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param string $userStatus "anonymous" or "identified", else not filtered.
+     * @return integer
+     */
+    public function total_download($downloadId, $userStatus = null)
+    {
+        $userStatus = $this->_getUserStatus($userStatus);
+        return $this->_tableStat->getTotalDownload($downloadId, $userStatus);
+    }
+
+    /**
      * Get the position of hits of the page.
      *
      * @param string $url Url
@@ -75,7 +112,9 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function position_page($url, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getPositionPage($url, $userStatus);
+        // Call getPosition() and not getPositionPage() to simplify process of
+        // page or download. The check is made later.
+        return $this->_tableStat->getPosition(array('url' => $url), $userStatus);
     }
 
     /**
@@ -89,6 +128,19 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     {
         $userStatus = $this->_getUserStatus($userStatus);
         return $this->_tableStat->getPositionRecord($record, $userStatus);
+    }
+
+    /**
+     * Get the position of hits of the download.
+     *
+     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param string $userStatus "anonymous" or "identified", else not filtered.
+     * @return integer
+     */
+    public function position_download($downloadId, $userStatus = null)
+    {
+        $userStatus = $this->_getUserStatus($userStatus);
+        return $this->_tableStat->getPositionDownload($downloadId, $userStatus);
     }
 
     /**
@@ -119,6 +171,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      * Get viewed records.
      *
      * @param Record|array $recordType If array, contains record type.
+     * Can be empty, "all", "none", "page" or "download" too.
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @param integer $limit Number of objects to return per "page".
@@ -129,11 +182,17 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function viewed_records($recordType, $sort = 'most', $userStatus = null, $limit = null, $page = null, $asHtml = true)
     {
         // Manage exceptions.
-        if ($recordType == 'all' || (is_array($recordType) && in_array('all', $recordType))) {
+        if (empty($recordType) || $recordType == 'all' || (is_array($recordType) && in_array('all', $recordType))) {
             $recordType = null;
         }
         elseif ($recordType == 'none' || (is_array($recordType) && in_array('none', $recordType))) {
             return $this->viewed_pages(false, $sort, $userStatus, $limit, $page, $asHtml);
+        }
+        elseif ($recordType == 'page' || (is_array($recordType) && in_array('page', $recordType))) {
+            return $this->viewed_pages(null, $sort, $userStatus, $limit, $page, $asHtml);
+        }
+        elseif ($recordType == 'download' || (is_array($recordType) && in_array('download', $recordType))) {
+            return $this->viewed_downloads($sort, $userStatus, $limit, $page, $asHtml);
         }
 
         $userStatus = $this->_getUserStatus($userStatus);
@@ -147,10 +206,32 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     }
 
     /**
+     * Get viewed downloads.
+     *
+     * @param string $sort Sort by "most" (default) or "last" vieweds.
+     * @param string $userStatus "anonymous" or "identified", else not filtered.
+     * @param integer $limit Number of objects to return per "page".
+     * @param integer $page Offfset to set page to retrieve.
+     * @param boolean $asHtml Return html (true, default) or array of Stats.
+     * @return string|array Return html of array of Stats.
+     */
+    public function viewed_downloads($sort = 'most', $userStatus = null, $limit = null, $page = null, $asHtml = true)
+    {
+        $userStatus = $this->_getUserStatus($userStatus);
+        $stats = ($sort == 'last')
+            ? $this->_tableStat->getLastViewedDownloads($userStatus, $limit, $page)
+            : $this->_tableStat->getMostViewedDownloads($userStatus, $limit, $page);
+
+        return $asHtml
+            ? $this->_viewedHtml($stats, 'download', $sort, $userStatus)
+            : $stats;
+    }
+
+    /**
      * Helper to get string from list of stats.
      *
      * @param array $stats Array of stats.
-     * @param string $type "page" or "record"
+     * @param string $type "page", "record" or "download".
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return string html
@@ -218,6 +299,25 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
         $stat = $this->_tableStat->findByRecord($record);
         return common('stats-value', array(
             'type' => 'record',
+            'stat' => $stat,
+            'user_status' => $userStatus,
+        ));
+    }
+
+    /**
+     * Get the stat view for the selected download.
+     *
+     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param string $userStatus "anonymous" or "identified", else not filtered.
+     *
+     * @return string Html code from the theme.
+     */
+    public function text_download($downloadId, $userStatus = null)
+    {
+        $userStatus = $this->_getUserStatus($userStatus);
+        $stat = $this->_tableStat->findByDownload($downloadId);
+        return common('stats-value', array(
+            'type' => 'download',
             'stat' => $stat,
             'user_status' => $userStatus,
         ));
@@ -331,6 +431,16 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
         }
         return $url;
     }
+
+    /**
+     * Check if url is a page one or a download one.
+     *
+     * @return boolean
+     */
+     public function isDownload($url)
+     {
+        return (strpos($url, '/files/original/') === 0) || (strpos($url, '/files/fullsize/') === 0);
+     }
 
     /**
      * Helper to get params from a record. If no record, return empty record.

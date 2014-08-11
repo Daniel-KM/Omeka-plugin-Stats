@@ -25,6 +25,10 @@ switch ($stats_type):
         <?php endif; ?>
         <?php break;
 
+    case 'download': ?>
+        <li><a href="<?php echo url($base_url); ?>"><?php echo __('View All') ?></a></li>
+        <?php break;
+
     case 'field': ?>
         <li><a href="<?php echo url($base_url, array('field' => 'referrer')); ?>"><?php echo __('Referrers'); ?></a></li>
         <li><a href="<?php echo url($base_url, array('field' => 'query')); ?>"><?php echo __('Queries'); ?></a></li>

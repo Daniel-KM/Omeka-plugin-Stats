@@ -8,7 +8,8 @@
                 <p class="explanation">
                     <?php echo __('Select access rights for each stats page and each role.');
                     echo '<br />' . __('If "public" is checked, all people will have access to the selected data.');
-                    echo '<br />' . __("%sWarning%s: Shortcodes, helpers and hooks doesn't follow any rule.", '<strong>', '</strong>'); ?>
+                    echo '<br />' . __('To get stats about direct download of original files, a line should be added in ".htaccess".');
+                    echo '<br />' . __("%sWarning%s: Shortcodes, helpers and hooks don't follow any rule.", '<strong>', '</strong>'); ?>
                 </p>
                 <?php
                     $table = array(
@@ -26,6 +27,11 @@
                             'label' => __('Browse by Record'),
                             'public' => 'stats_public_allow_browse_records',
                             'roles' => 'stats_roles_browse_records',
+                        ),
+                        'browse_downloads' => array(
+                            'label' => __('Browse by Download'),
+                            'public' => 'stats_public_allow_browse_downloads',
+                            'roles' => 'stats_roles_browse_downloads',
                         ),
                         'browse_fields' => array(
                             'label' => __('Browse by Field'),
@@ -51,7 +57,7 @@
                     $key = 0;
                     foreach ($table as $name => $right):
                         $currentRole = $right['roles'];
-                        $currentRoles = unserialize(get_option($currentRole));
+                        $currentRoles = get_option($currentRole) ? unserialize(get_option($currentRole)) : array();
                         printf('<tr class="%s">', (++$key % 2 == 1) ? 'odd' : 'even');
                         echo '<td>' . $right['label'].  '</td>';
                         echo '<td>';

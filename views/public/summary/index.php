@@ -50,15 +50,15 @@ echo common('stats-nav');
         </ul>
     </div>
 </section>
-<?php if (isset($results['most_vieweds_pages'])): ?>
+<?php if (isset($results['most_viewed_pages'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
         <h2><a href="<?php echo url('/stats/browse/by-page'); ?>"><?php echo __('Most viewed public pages'); ?></a></h2>
-        <?php if (empty($results['most_vieweds_pages'])): ?>
+        <?php if (empty($results['most_viewed_pages'])): ?>
         <p><?php echo __('None'); ?></p>
         <?php else: ?>
         <ol>
-        <?php foreach ($results['most_vieweds_pages'] as $position => $stat): ?>
+        <?php foreach ($results['most_viewed_pages'] as $position => $stat): ?>
             <li><?php
                 echo __('%s (%d views)',
                      '<a href="' . WEB_ROOT . $stat->url . '">' . $stat->url . '</a>',
@@ -70,18 +70,38 @@ echo common('stats-nav');
     </div>
 </section>
 <?php endif; ?>
-<?php if (isset($results['most_vieweds_records'])): ?>
+<?php if (isset($results['most_viewed_records'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
         <h2><a href="<?php echo url('/stats/browse/by-record'); ?>"><?php echo __('Most viewed public records'); ?></a></h2>
-        <?php if (empty($results['most_vieweds_records'])): ?>
+        <?php if (empty($results['most_viewed_records'])): ?>
         <p><?php echo __('None'); ?></p>
         <?php else: ?>
         <ol>
-        <?php foreach ($results['most_vieweds_records'] as $position => $stat): ?>
+        <?php foreach ($results['most_viewed_records'] as $position => $stat): ?>
             <li><?php
                 echo __('%s (%d views)',
                     $this->stats()->link_to_record($stat->Record),
+                     $stat->$user_status);
+            ?></li>
+        <?php endforeach; ?>
+        </ol>
+        <?php endif; ?>
+    </div>
+</section>
+<?php endif; ?>
+<?php if (isset($results['most_viewed_downloads'])): ?>
+<section class="ten columns alpha omega">
+    <div class="panel">
+        <h2><a href="<?php echo url('/stats/browse/by-download'); ?>"><?php echo __('Most downloaded files'); ?></a></h2>
+        <?php if (empty($results['most_viewed_downloads'])): ?>
+        <p><?php echo __('None'); ?></p>
+        <?php else: ?>
+        <ol>
+        <?php foreach ($results['most_viewed_downloads'] as $position => $stat): ?>
+            <li><?php
+                echo __('%s (%d downloads)',
+                     '<a href="' . WEB_ROOT . $stat->url . '">' . $stat->url . '</a>',
                      $stat->$user_status);
             ?></li>
         <?php endforeach; ?>

@@ -73,6 +73,7 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
         'User' => 'getUser',
         'StatPage' => 'getStatPage',
         'StatRecord' => 'getStatRecord',
+        'StatDownload' => 'getStatDownload',
     );
 
     /**
@@ -90,6 +91,11 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
      * Non-persistent stat object for record, if any.
      */
      private $_stat_record;
+
+    /**
+     * Non-persistent stat object for download, if any.
+     */
+     private $_stat_download;
 
     /**
      * Non-persistent request object.
@@ -114,6 +120,16 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     public function hasRecord()
     {
         return (!empty($this->record_type) && !empty($this->record_id));
+    }
+
+    /**
+     * Determine whether or not the hit is a direct download.
+     *
+     * @return boolean True if hit has a record, even deleted.
+     */
+    public function isDownload()
+    {
+        return (strpos($this->url, '/files/original/') === 0) || (strpos($this->url, '/files/fullsize/') === 0);
     }
 
     /**
@@ -147,9 +163,11 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
      */
     public function getStat($type = 'page')
     {
-        return ($type == 'record')
-            ? $this->getStatRecord()
-            :  $this->getStatPage();
+        switch ($type) {
+            case 'record': return $this->getStatRecord();
+            case 'download': return $this->getStatDownload();
+            default: return $this->getStatRecord();
+        }
     }
 
     /**
@@ -188,6 +206,26 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
                 }
             }
             return $this->_stat_record;
+        }
+    }
+
+    /**
+     * Get the stat object of the download.
+     *
+     * @return Stat
+     */
+    public function getStatDownload()
+    {
+        if ($this->isDownload()) {
+            if (empty($this->_stat_download)) {
+                $this->_stat_download = $this->getTable('Stat')->findByDownload($this->url);
+                // Create a new stat for the case a stat doesn't exist.
+                // Hit is counted only when hit is saved.
+                if (empty($this->_stat_download)) {
+                    $this->_stat_download = $this->_setStat('download');
+                }
+            }
+            return $this->_stat_download;
         }
     }
 
@@ -231,6 +269,19 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     }
 
     /**
+     * Get the count of hits of the record, if any.
+     *
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     *
+     * @return integer
+     */
+    public function getTotalDownload($userStatus = null)
+    {
+        return $this->getStatDownload()->getTotalDownload($userStatus);
+    }
+
+    /**
      * Get the position of the page in the most viewed.
      *
      * @param string $userStatus Can be hits (default), hits_anonymous or
@@ -257,6 +308,19 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     }
 
     /**
+     * Get the position of the direct download in the most viewed.
+     *
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     *
+     * @return integer
+     */
+    public function getPositionDownload($userStatus = null)
+    {
+        return $this->getStatDownload()->getPositionDownload($userStatus = null);
+    }
+
+    /**
      * Get a property about the record for display purposes.
      *
      * @param string $property Property to get. Always lowercase.
@@ -274,11 +338,15 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
                 return $this->getStatPage();
             case 'stat_record':
                 return $this->getStatRecord();
+            case 'stat_download':
+                return $this->getStatDownload();
             case 'total':
             case 'total_page':
                 return $this->getTotalPage();
             case 'total_record':
                 return $this->getTotalRecord();
+            case 'total_download':
+                return $this->getTotalDownload();
             case 'record_deleted':
                 return $this->hasRecord() ? (boolean) $this->getRecord() : null;
             default:
@@ -318,6 +386,7 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     public function setCurrentHit()
     {
         $this->setCurrentRequest();
+        $this->setCurrentUrl();
         $this->setCurrentRecord();
         $this->setCurrentUser();
     }
@@ -328,7 +397,6 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     public function setCurrentRequest()
     {
         $request = $this->_getRequest();
-        $this->setCurrentUrl();
         $this->ip = (string) $this->_getRemoteIP();
         $this->referrer = (string) $request->getServer('HTTP_REFERER');
         $this->query = (string) $request->getServer('QUERY_STRING');
@@ -354,11 +422,6 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     {
         $params = $this->_getRequest()->getParams();
 
-        // TODO Check if this test is still needed.
-        if (!isset($params['module'])) {
-            $params['module'] = 'default';
-        }
-
         $records = apply_filters('stats_record', array(), $params);
 
         $record = reset($records);
@@ -381,12 +444,12 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     /**
      * Set stat.
      *
-     * @param string $type "page" or "record".
+     * @param string $type "page", "record" or "download".
      */
     public function _setStat($type = 'page')
     {
         $stat = new Stat;
-        $stat->type = ($type == 'record') ? 'record' : 'page';
+        $stat->type = in_array($type, array('page', 'record', 'download')) ? $type : 'page';
         $stat->setDataFromHit($this);
         $stat->save();
         return $stat;
@@ -411,7 +474,10 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     {
         if ($args['insert']) {
             // Stat is created and filled via getStat() if not exists.
-            $stat = $this->getStatPage();
+            // "page" and "download" are mutually exclusive.
+            $stat = $this->isDownload()
+                 ? $this->getStatDownload()
+                 : $this->getStatPage();
             $stat->increaseHits();
             $stat->save();
             // A second stat is needed to manage record count.

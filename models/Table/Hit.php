@@ -428,6 +428,9 @@ class Table_Hit extends Omeka_Db_Table
                 case 'has_record':
                     $this->filterByHasRecord($select, $value);
                     break;
+                case 'is_download':
+                    $this->filterByIsDownload($select, $value);
+                    break;
                 case 'user':
                     $user_id = $this->_getUserId($value);
                     $this->filterByUser($select, $user_id, 'user_id');
@@ -516,6 +519,28 @@ class Table_Hit extends Omeka_Db_Table
             }
             else {
                 $select->where("`$alias`.`record_type` = ''");
+            }
+        }
+    }
+
+    /**
+     * Filter direct download hit.
+     *
+     * @param Omeka_Db_Select
+     * @param null|boolean $isDownload
+     * @return void
+     */
+    public function filterByIsDownload($select, $isDownload)
+    {
+        if (!is_null($isDownload)) {
+            $alias = $this->getTableAlias();
+            if ($isDownload) {
+                $select->where("`$alias`.`url` LIKE '/files/original/%'");
+                $select->where("`$alias`.`url` LIKE '/files/fullsize/%'");
+            }
+            else {
+                $select->where("`$alias`.`url` NOT LIKE '/files/original/%'");
+                $select->where("`$alias`.`url` NOT LIKE '/files/fullsize/%'");
             }
         }
     }

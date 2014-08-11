@@ -10,9 +10,11 @@
 class Stat extends Omeka_Record_AbstractRecord
 {
     /**
-     * Two types of stats exists: for pages and for records. An hit creates or
-     * increases values of the stat with the specified url. If this page is
-     * dedicated to a record, a second stat is created or increased for the record.
+     * Three types of stats exists: pages, records and direct downloads.
+     * A hit creates or increases values of the stat with the specified url. If
+     * this page is dedicated to a record, a second stat is created or increased
+     * for the record. If the url is a direct download one, another stat is
+     * created or increased.
      * Stats should be created only by Hit (no check is done here).
      *
      * @var string
@@ -22,7 +24,8 @@ class Stat extends Omeka_Record_AbstractRecord
     /**
      * Url is not the full url, but only the Omeka one: no domain, no specific
      * path. So `http://www.example.com/omeka/items/show/1` is saved as
-     * `/items/show/1` and home page as `/`.
+     * `/items/show/1` and home page as `/`. For downloads, url stats with
+     * "/files/original/" or "/files/fullsize/".
      *
      * @var string
      */
@@ -147,6 +150,7 @@ class Stat extends Omeka_Record_AbstractRecord
         switch ($this->type) {
             case 'page': return $this->getTotalPage($userStatus);
             case 'record': return $this->getTotalRecord($userStatus);
+            case 'download': return $this->getTotalDownload($userStatus);
         }
     }
 
@@ -177,9 +181,13 @@ class Stat extends Omeka_Record_AbstractRecord
      */
     public function getTotalRecord($userStatus = null)
     {
-        // If type is record, no sql is needed.
         switch ($this->type) {
+            // If type is "record", no sql is needed.
+            case 'record':
+                $userStatus = $this->_checkUserStatus($userStatus);
+                return $this->$userStatus;
             case 'page':
+            case 'download':
                 if ($this->hasRecord()) {
                     $record = array();
                     $record['record_type'] = $this->record_type;
@@ -187,9 +195,6 @@ class Stat extends Omeka_Record_AbstractRecord
                     return $this->getTable('Stat')->getTotalRecord($record, $userStatus);
                 }
                 break;
-            case 'record':
-                $userStatus = $this->_checkUserStatus($userStatus);
-                return $this->$userStatus;
         }
     }
 
@@ -209,6 +214,20 @@ class Stat extends Omeka_Record_AbstractRecord
     }
 
     /**
+     * Get the specified count of hits of the current download.
+     *
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     *
+     * @return integer
+     */
+    public function getTotalDownload($userStatus = null)
+    {
+        $userStatus = $this->_checkUserStatus($userStatus);
+        return $this->$userStatus;
+    }
+
+    /**
      * Get the specified position of the current type.
      *
      * @param string $userStatus Can be hits (default), hits_anonymous or
@@ -221,6 +240,7 @@ class Stat extends Omeka_Record_AbstractRecord
         switch ($this->type) {
             case 'page': return $this->getPositionPage($userStatus);
             case 'record': return $this->getPositionRecord($userStatus);
+            case 'download': return $this->getPositionDownload($userStatus);
         }
     }
 
@@ -251,6 +271,19 @@ class Stat extends Omeka_Record_AbstractRecord
         $record['record_type'] = $this->record_type;
         $record['record_id'] = $this->record_id;
         return $this->getTable('Stat')->getPositionRecord($record, $userStatus);
+    }
+
+    /**
+     * Get the position of the download.
+     *
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     *
+     * @return integer
+     */
+    public function getPositionDownload($userStatus = null)
+    {
+        return $this->getTable('Stat')->getPositionDownload($this->url, $userStatus);
     }
 
     /**
@@ -331,7 +364,7 @@ class Stat extends Omeka_Record_AbstractRecord
      */
     protected function _validate()
     {
-        if (empty($this->type) || !in_array($this->type, array('page', 'record'))) {
+        if (empty($this->type) || !in_array($this->type, array('page', 'record', 'download'))) {
             $this->addError('type', __('Type should be "page" or "record".'));
         }
     }

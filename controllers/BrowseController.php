@@ -14,7 +14,7 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
     public function init()
     {
         // The default table depends on action.
-        $action = Zend_Controller_Front::getInstance()->getRequest()->getParam('action', 'index');
+        $action = $this->getRequest()->getParam('action', 'index');
         switch ($action) {
             case 'by-field':
                 $this->_helper->db->setDefaultModelName('Hit');
@@ -71,6 +71,20 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
         $this->_browseAction();
         $this->view->assign(array(
             'stats_type' => 'record',
+            'user_status' => $this->_userStatus,
+        ));
+        $this->_helper->viewRenderer('by-stat');
+    }
+
+    /**
+     * Browse rows by download action.
+     */
+    public function byDownloadAction()
+    {
+        $this->setParam('type', 'download');
+        $this->_browseAction();
+        $this->view->assign(array(
+            'stats_type' => 'download',
             'user_status' => $this->_userStatus,
         ));
         $this->_helper->viewRenderer('by-stat');

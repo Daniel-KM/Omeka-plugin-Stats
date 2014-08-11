@@ -49,6 +49,21 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
+     * Retrieve the stat for a download.
+     *
+     * @param string|integer $downloadId Url or id of the downloaded file.
+     *
+     * @return Stat|null
+     */
+    public function findByDownload($downloadId)
+    {
+        $params = array();
+        $params['stat_download'] = $downloadId;
+        $result = $this->findBy($params, 1);
+        return $result ? reset($result) : null;
+    }
+
+    /**
      * Get the total count of specified hits.
      *
      * @param array $params Array of params (url, record type, etc.).
@@ -126,6 +141,24 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
+     * Wrapper for to get the total count of hits of the specified download.
+     *
+     * @uses Table_Stat::getTotal()
+     *
+     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     *
+     * @return integer
+     */
+    public function getTotalDownload($downloadId, $userStatus = null)
+    {
+        $params = array();
+        $params['stat_download'] = $downloadId;
+        return $this->getTotal($params, $userStatus);
+    }
+
+    /**
      * Get the position of a stat (first one is the most viewed).
      *
      * @param array $params array of params (url, record type, etc.).
@@ -143,7 +176,7 @@ class Table_Stat extends Omeka_Db_Table
         $alias = $this->getTableAlias();
         $userStatus = $this->_checkUserStatus($userStatus);
 
-        // Build the sub-query to get the hits number for this page or record.
+        // Build the sub-query to get the hits number for this url or record.
         $subSelect = $this->getSelectForCount($params)
             ->reset(Zend_Db_Select::COLUMNS)
             ->from(array(), "$alias.$userStatus")
@@ -157,9 +190,15 @@ class Table_Stat extends Omeka_Db_Table
             return 0;
         }
 
-        // Build the main query.
+        // Build the main query. Sometimes, type and record type are not set.
         $paramsSelect = array();
-        if (isset($params['stat_record'])) {
+        if (isset($params['stat_page'])) {
+            $paramsSelect['type'] = 'page';
+        }
+        elseif (isset($params['stat_download'])) {
+            $paramsSelect['type'] = 'download';
+        }
+        elseif (isset($params['stat_record'])) {
             $paramsSelect['stat_record_type'] = $params['stat_record'];
         }
         elseif (isset($params['record'])) {
@@ -167,6 +206,9 @@ class Table_Stat extends Omeka_Db_Table
         }
         elseif (isset($params['record_type'])) {
             $paramsSelect['stat_record_type'] = $params['record_type'];
+        }
+        elseif (isset($params['url']) && get_view()->stats()->isDownload($params['url'])) {
+            $paramsSelect['type'] = 'download';
         }
         else {
             $paramsSelect['type'] = 'page';
@@ -213,6 +255,24 @@ class Table_Stat extends Omeka_Db_Table
     {
         $params = array();
         $params['stat_record'] = $record;
+        return $this->getPosition($params, $userStatus);
+    }
+
+    /**
+     * Get the position of a download (first one is the most viewed).
+     *
+     * @uses Table_Stat::getPosition()
+     *
+     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     *
+     * @return integer
+     */
+    public function getPositionDownload($downloadId, $userStatus = null)
+    {
+        $params = array();
+        $params['stat_download'] = $downloadId;
         return $this->getPosition($params, $userStatus);
     }
 
@@ -314,6 +374,34 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
+     * Get the most downloaded files.
+     *
+     * Zero viewed downloads are never returned.
+     *
+     * @uses Table_Stat::getVieweds().
+     *
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     * @param integer $limit Number of objects to return per "page".
+     * @param integer $page Page to retrieve.
+     *
+     * @return array of Stats
+     */
+    public function getMostViewedDownloads($userStatus = null, $limit = null, $page = null)
+    {
+        $userStatus = $this->_checkUserStatus($userStatus);
+        $params = array();
+        $params['type'] = 'download';
+        $params['not_zero'] = $userStatus;
+        $params['sort_field'] = array(
+            $userStatus => 'DESC',
+            // This order is needed in order to manage ex-aequos.
+            'modified' => 'ASC',
+        );
+        return $this->getVieweds($params, $limit, $page);
+    }
+
+    /**
      * Get the last viewed pages.
      *
      * Zero viewed pages are never returned.
@@ -373,6 +461,32 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
+     * Get the last viewed downloads.
+     *
+     * Zero viewed downloads are never returned.
+     *
+     * @uses Table_Stat::getVieweds().
+     *
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     * @param integer $limit Number of objects to return per "page".
+     * @param integer $page Page to retrieve.
+     *
+     * @return array of Stats
+     */
+    public function getLastViewedDownloads($userStatus = null, $limit = null, $page = null)
+    {
+        $userStatus = $this->_checkUserStatus($userStatus);
+        $params = array();
+        $params['type'] = 'download';
+        $params['not_zero'] = $userStatus;
+        $params['sort_field'] = array(
+            'modified' => 'ASC',
+        );
+        return $this->getVieweds($params, $limit, $page);
+    }
+
+    /**
      * @param Omeka_Db_Select
      * @param array
      * @return void
@@ -401,6 +515,9 @@ class Table_Stat extends Omeka_Db_Table
                 case 'has_record':
                     $this->filterByHasRecord($select, $value);
                     break;
+                case 'is_download':
+                    $this->filterByIsDownload($select, $value);
+                    break;
                 case 'stat_page':
                     $this->filterByType($select, 'page');
                     $this->filterByUrl($select, $value);
@@ -412,6 +529,18 @@ class Table_Stat extends Omeka_Db_Table
                 case 'stat_record_type':
                     $this->filterByType($select, 'record');
                     $this->filterByRecordType($select, $value);
+                    break;
+                case 'stat_download':
+                    $this->filterByType($select, 'download');
+                    if (is_integer($value) || ((integer) ($value) == $value)) {
+                        $this->filterByRecord($select, array(
+                            'record_type' => 'File',
+                            'record_id' => $value
+                        ));
+                    }
+                    else {
+                        $this->filterByUrl($select, $value);
+                    }
                     break;
                 case 'total':
                     parent::applySearchFilters($select, array('hits' => $value));
@@ -444,7 +573,7 @@ class Table_Stat extends Omeka_Db_Table
      */
     public function filterByType($select, $type)
     {
-        if (in_array($type, array('page', 'record'))) {
+        if (in_array($type, array('page', 'record', 'download'))) {
             $alias = $this->getTableAlias();
             $select->where("`$alias`.`type` = ?", $type);
         }
@@ -508,6 +637,26 @@ class Table_Stat extends Omeka_Db_Table
             }
             else {
                 $select->where("`$alias`.`record_type` = ''");
+            }
+        }
+    }
+
+    /**
+     * Filter direct download hit.
+     *
+     * @param Omeka_Db_Select
+     * @param null|boolean $isDownload
+     * @return void
+     */
+    public function filterByIsDownload($select, $isDownload)
+    {
+        if (!is_null($isDownload)) {
+            $alias = $this->getTableAlias();
+            if ($isDownload) {
+                $select->where("`$alias`.`type` = 'download'");
+            }
+            else {
+                $select->where("`$alias`.`type` != 'download'");
             }
         }
     }
