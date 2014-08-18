@@ -86,7 +86,7 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
-     * Wrapper for to get the total count of hits of the specified page.
+     * Wrapper to get the total count of hits of the specified page.
      *
      * @uses Table_Stat::getTotal()
      *
@@ -104,7 +104,7 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
-     * Wrapper for to get the total count of hits of the specified record.
+     * Wrapper to get the total count of hits of the specified record.
      *
      * @uses Table_Stat::getTotal()
      *
@@ -122,7 +122,7 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
-     * Wrapper for to get the total count of hits of the specified record type.
+     * Wrapper to get the total count of hits of the specified record type.
      *
      * @uses Table_Stat::getTotal()
      *
@@ -141,21 +141,30 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
-     * Wrapper for to get the total count of hits of the specified download.
+     * Wrapper to get the total count of hits of the specified download.
      *
      * @uses Table_Stat::getTotal()
      *
-     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param Record|string|integer $value If string or numeric, url or id the
+     * downloaded  file. If Item, returns total of dowloaded files of this Item.
+     * If Collection, returns total of downloaded files of all items. If File,
+     * returns total of downloads of this file.
      * @param string $userStatus Can be hits (default), hits_anonymous or
      * hits_identified.
      *
      * @return integer
      */
-    public function getTotalDownload($downloadId, $userStatus = null)
+    public function getTotalDownload($value, $userStatus = null)
     {
         $params = array();
-        $params['stat_download'] = $downloadId;
-        return $this->getTotal($params, $userStatus);
+        if (is_string($value) || is_numeric($value)) {
+            $params['stat_download'] = $value;
+            return $this->getTotal($params, $userStatus);
+        }
+        else {
+            $params['stat_downloads'] = get_view()->stats()->checkAndPrepareRecord($value);
+            return $this->getTotal($params, $userStatus);
+        }
     }
 
     /**
@@ -195,7 +204,7 @@ class Table_Stat extends Omeka_Db_Table
         if (isset($params['stat_page'])) {
             $paramsSelect['type'] = 'page';
         }
-        elseif (isset($params['stat_download'])) {
+        elseif (isset($params['stat_download']) || isset($params['stat_downloads'])) {
             $paramsSelect['type'] = 'download';
         }
         elseif (isset($params['stat_record'])) {
@@ -259,21 +268,30 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
-     * Get the position of a download (first one is the most viewed).
+     * Wrapper to get the position of the specified download.
      *
      * @uses Table_Stat::getPosition()
      *
-     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param Record|string|integer $value If string or numeric, url or id the
+     * downloaded  file. If Item, returns position of dowloaded files of this
+     * Item. If Collection, returns position of downloaded files of all items.
+     * If File, returns position of downloads of this file.
      * @param string $userStatus Can be hits (default), hits_anonymous or
      * hits_identified.
      *
      * @return integer
      */
-    public function getPositionDownload($downloadId, $userStatus = null)
+    public function getPositionDownload($value, $userStatus = null)
     {
         $params = array();
-        $params['stat_download'] = $downloadId;
-        return $this->getPosition($params, $userStatus);
+        if (is_string($value) || is_numeric($value)) {
+            $params['stat_download'] = $value;
+            return $this->getPosition($params, $userStatus);
+        }
+        else {
+            $params['stat_downloads'] = get_view()->stats()->checkAndPrepareRecord($value);
+            return $this->getPosition($params, $userStatus);
+        }
     }
 
     /**
@@ -531,16 +549,10 @@ class Table_Stat extends Omeka_Db_Table
                     $this->filterByRecordType($select, $value);
                     break;
                 case 'stat_download':
-                    $this->filterByType($select, 'download');
-                    if (is_integer($value) || ((integer) ($value) == $value)) {
-                        $this->filterByRecord($select, array(
-                            'record_type' => 'File',
-                            'record_id' => $value
-                        ));
-                    }
-                    else {
-                        $this->filterByUrl($select, $value);
-                    }
+                    $this->filterByDownload($select, $value);
+                    break;
+                case 'stat_downloads':
+                    $this->filterByDownloads($select, $value);
                     break;
                 case 'total':
                     parent::applySearchFilters($select, array('hits' => $value));
@@ -658,6 +670,65 @@ class Table_Stat extends Omeka_Db_Table
             else {
                 $select->where("`$alias`.`type` != 'download'");
             }
+        }
+    }
+
+    /**
+     * Filter direct download hit.
+     *
+     * @param Omeka_Db_Select
+     * @param string|integer $downloadId
+     * @return void
+     */
+    public function filterByDownload($select, $downloadId)
+    {
+        $this->filterByType($select, 'download');
+        if (is_numeric($downloadId)) {
+            $this->filterByRecord($select, array(
+                'record_type' => 'File',
+                'record_id' => $downloadId,
+            ));
+        }
+        else {
+            $this->filterByUrl($select, $downloadId);
+        }
+    }
+
+    /**
+     * Filter direct download hit by group hits on files for Item or Collection.
+     *
+     * @param Omeka_Db_Select
+     * @param Record|array $record If array, contains record type and record id.
+     * @return void
+     */
+    public function filterByDownloads($select, $record)
+    {
+        $alias = $this->getTableAlias();
+        $this->filterByType($select, 'download');
+        $record = get_view()->stats()->checkAndPrepareRecord($record);
+        $select->where("`$alias`.`record_type` = 'File'");
+        switch($record['record_type']) {
+            case 'Item':
+                $select->joinInner(
+                    array('files' => $this->getDb()->File),
+                    "stats.record_type = 'File' AND stats.record_id = files.id",
+                    array());
+                $select->where("`files`.`item_id` = ?", $record['record_id']);
+                break;
+            case 'Collection':
+                $select->joinInner(
+                    array('files' => $this->getDb()->File),
+                    "stats.record_type = 'File' AND stats.record_id = files.id",
+                    array());
+                $select->joinInner(
+                    array('items' => $this->getDb()->Item),
+                    'files.item_id = items.id',
+                    array());
+                $select->where("`items`.`collection_id` = ?", $record['record_id']);
+                break;
+            case 'File':
+                $select->where("`$alias`.`record_id` = ?", $record['record_id']);
+                break;
         }
     }
 

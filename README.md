@@ -109,10 +109,15 @@ echo $this->stats()->text_page(current_url());
 
 All arguments are optional. Arguments are:
 * For `stats_total` and `stats_position`
+  - `type`: If "download", group all downloaded files linked to the specified
+  record (all files of an item, or all files of all items of a collection).
+  Else, the type is automatically detected ("record" if a record is set, "page"
+  if an url is set or if nothing is set).
   - `record_type`: one or multiple Omeka record type, e.g. "Item" or
-  "Collection". For files, the record type may be "File" for the "/files/show/#" page
-  of the record, or "download" fçr the direct download. Alternatively, the
-  url can be used, but without [Archive Repertory], this is an obfuscated one.
+  "Collection", or "File". By default, a viewed record is counted for each hit
+  on the dedicated page of a record, like "/items/show/#". Alternatively, the
+  url can be used (with the argument `url`, but to count the downloaded files,
+  this is an obfuscated one except if [Archive Repertory] is used.
   - `record_id`: the identifier of the record (not the slug if any). It implies
   one specific `record_type` and only one. With `stats_position`, `record_id` is
   required when searching by record.

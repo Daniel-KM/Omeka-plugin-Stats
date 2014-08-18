@@ -53,13 +53,16 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     /**
      * Get the count of hits of the page.
      *
-     * @param string $url Url
+     * @param string $url Url Current url if null.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return integer
      */
-    public function total_page($url, $userStatus = null)
+    public function total_page($url = null, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
+        if (is_null($url)) {
+            $url = current_url();
+        }
         return $this->_tableStat->getTotalPage($url, $userStatus);
     }
 
@@ -90,28 +93,34 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     }
 
     /**
-     * Get the count of hits of the download.
+     * Get the count of hits of a record or sub-record.
      *
-     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param Record|string|integer $value If string or numeric, url or id of the
+     * downloaded  file. If Item, returns total of dowloaded files of this Item.
+     * If Collection, returns total of downloaded files of all items. If File,
+     * returns total of downloads of this file.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return integer
      */
-    public function total_download($downloadId, $userStatus = null)
+    public function total_download($value, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getTotalDownload($downloadId, $userStatus);
+        return $this->_tableStat->getTotalDownload($value, $userStatus);
     }
 
     /**
      * Get the position of hits of the page.
      *
-     * @param string $url Url
+     * @param string $url Url Current url if null.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return integer
      */
-    public function position_page($url, $userStatus = null)
+    public function position_page($url = null, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
+        if (is_null($url)) {
+            $url = current_url();
+        }
         // Call getPosition() and not getPositionPage() to simplify process of
         // page or download. The check is made later.
         return $this->_tableStat->getPosition(array('url' => $url), $userStatus);
@@ -133,14 +142,19 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     /**
      * Get the position of hits of the download.
      *
-     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @todo Position of user is currently unavailable.
+     *
+     * @param Record|string|integer $value If string or numeric, url or id of the
+     * downloaded  file. If Item, returns position of dowloaded files of this
+     * Item. If Collection, returns position of downloaded files of all items.
+     * If File, returns position of downloads of this file.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return integer
      */
-    public function position_download($downloadId, $userStatus = null)
+    public function position_download($value, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getPositionDownload($downloadId, $userStatus);
+        return $this->_tableStat->getPositionDownload($value, $userStatus);
     }
 
     /**

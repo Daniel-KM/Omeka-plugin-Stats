@@ -643,6 +643,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $html = '';
 
         $result = null;
+        $type = isset($args['type']) ? $args['type'] : null;
         $recordType = isset($args['record_type']) ? $args['record_type'] : null;
         $recordId = (!empty($recordType) && is_string($recordType) && isset($args['record_id']))
             ? $args['record_id']
@@ -650,11 +651,11 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Search by record.
         if (!empty($recordId)) {
-            if ($recordType == 'download') {
-                $result = $view->stats()->total_download($recordId);
+            $record = array('record_type' => $recordType, 'record_id' => $recordId);
+            if ($type == 'download') {
+                $result = $view->stats()->total_download($record);
             }
             else {
-                $record = array('record_type' => $recordType, 'record_id' => $recordId);
                 $result = $view->stats()->total_record($record);
             }
         }
@@ -664,7 +665,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         }
         // Search by url.
         else {
-            $url = $this->_getArgumentUrl($args);
+            $url = isset($args['url']) ? $args['url'] : current_url();
             $result = $view->stats()->total_page($url);
         }
 
@@ -688,6 +689,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $html = '';
 
         $result = null;
+        $type = isset($args['type']) ? $args['type'] : null;
         // Different from StatsTotal, because position of multiple record_type
         // is meaningless.
         $recordType = isset($args['record_type']) && is_string($args['record_type'])
@@ -699,17 +701,17 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Search by record.
         if (!empty($recordId)) {
-            if ($recordType == 'download') {
-                $result = $view->stats()->position_download($recordId);
+            $record = array('record_type' => $recordType, 'record_id' => $recordId);
+            if ($type == 'download') {
+                $result = $view->stats()->position_download($record);
             }
             else {
-                $record = array('record_type' => $recordType, 'record_id' => $recordId);
                 $result = $view->stats()->position_record($record);
             }
         }
         // Search by url.
         else {
-            $url = $this->_getArgumentUrl($args);
+            $url = isset($args['url']) ? $args['url'] : current_url();
             $result = $view->stats()->position_page($url);
         }
 
@@ -772,27 +774,6 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $statsDisplayByHooks = unserialize(get_option('stats_display_by_hooks'));
         return in_array($hookPage, $statsDisplayByHooks);
-    }
-
-    /**
-     * Extract url from args.
-     *
-     * @param array $args
-     * @return string url.
-     */
-    private function _getArgumentUrl($args)
-    {
-        $url = null;
-
-        if (isset($args['url'])) {
-            $url = $args['url'];
-        }
-
-        if (empty($url)) {
-            $url = current_url();
-        }
-
-        return $url;
     }
 
     /**
