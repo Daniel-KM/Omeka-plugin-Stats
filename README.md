@@ -89,7 +89,7 @@ echo $this->stats()->position_record($record);
 echo $this->stats()->text_page(current_url());
 ```
 
-* Shortocodes
+* Shortcodes
 
 [Shortcodes] are supported (Omeka 2.2 or above). Some illustrative examples:
 
@@ -138,8 +138,8 @@ All arguments are optional. Arguments are:
 
 The hook and the helper return the partial from the theme.
 
-`stats_total` and `stats_position` return a simple number surrounded by a
-`span` tag.
+`stats_total` and `stats_position` return a simple number, surrounded by a
+`span` tag when shortcode is used.
 `stats_vieweds` returns an html string that can be themed.
 
 
@@ -149,8 +149,8 @@ Notes
 - Hits of anonymous users and identified users are counted separately.
 - Only pages of the public theme are counted.
 - Reload of a page generates a new hit (no check).
-- IP can be hashed or not saved for privacy.
-- Currently, screen sizes is not detected.
+- IP can be hashed or not saved for privacy purpose.
+- Currently, screen size is not detected.
 
 
 Warning

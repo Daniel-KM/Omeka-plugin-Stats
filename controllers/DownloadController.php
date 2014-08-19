@@ -6,7 +6,7 @@
  *
  * @package Stats
  */
- class Stats_DownloadController extends Omeka_Controller_AbstractActionController
+class Stats_DownloadController extends Omeka_Controller_AbstractActionController
 {
     protected $_type;
     protected $_storage;
@@ -259,8 +259,14 @@
             }
 
             // Check rights: if the file belongs to a public item.
-            if (empty($this->_file) || empty($this->_file->getItem())) {
+            if (empty($this->_file)) {
                 $this->_file = false;
+            }
+            else {
+                $item = $this->_file->getItem();
+                if (empty($item)) {
+                    $this->_file = false;
+                }
             }
         }
 

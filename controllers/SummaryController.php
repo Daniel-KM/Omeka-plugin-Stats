@@ -3,7 +3,6 @@
  * Controller to get summary of Stats.
  * @package Stats
  */
-
 class Stats_SummaryController extends Omeka_Controller_AbstractActionController
 {
     private $_tableStat;

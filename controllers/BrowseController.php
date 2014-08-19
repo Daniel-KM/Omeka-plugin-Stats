@@ -3,7 +3,6 @@
  * Controller to browse Stats.
  * @package Stats
  */
-
 class Stats_BrowseController extends Omeka_Controller_AbstractActionController
 {
     private $_userStatus;
