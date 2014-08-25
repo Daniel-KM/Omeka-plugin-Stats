@@ -8,7 +8,7 @@ About
 least popular record and the most viewed pages. It provides useful infos on
 visitors too (language, referrer...). So this is an analytics tool like [Piwik]
 (open source), [Google Analytics] (proprietary, no privacy) and other hundreds
-of such web loggers.
+of such [web loggers].
 
 It has some advantages over them:
 - simple to manage (a normal plugin, with same interface);
@@ -208,6 +208,7 @@ Copyright
 [Stats]: https://github.com/Daniel-KM/Stats
 [Piwik]: https://piwik.org
 [Google Analytics]: http://www.google.com/analytics
+[web loggers]: https://en.wikipedia.org/wiki/List_of_web_analytics_software
 [LibreOffice]: https://www.documentfoundation.org
 [Shortcodes]: http://omeka.org/codex/Shortcodes
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory

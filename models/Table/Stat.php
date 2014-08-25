@@ -513,6 +513,7 @@ class Table_Stat extends Omeka_Db_Table
     {
         $alias = $this->getTableAlias();
         $boolean = new Omeka_Filter_Boolean;
+        $genericParams = array();
         foreach ($params as $key => $value) {
             if ($value === null || (is_string($value) && trim($value) == '')) {
                 continue;
@@ -522,13 +523,13 @@ class Table_Stat extends Omeka_Db_Table
                     $this->filterByType($select, $value);
                     break;
                 case 'url':
-                    $this->filterByUrl($select, $value);
+                    $genericParams['url'] = get_view()->stats()->checkAndCleanUrl($value);
                     break;
                 case 'record':
                     $this->filterByRecord($select, $value);
                     break;
                 case 'record_type':
-                    $this->filterByRecordType($select, $value);
+                    $genericParams['record_type'] = get_view()->stats()->checkRecordType($value);
                     break;
                 case 'has_record':
                     $this->filterByHasRecord($select, $value);
@@ -537,38 +538,51 @@ class Table_Stat extends Omeka_Db_Table
                     $this->filterByIsDownload($select, $value);
                     break;
                 case 'stat_page':
-                    $this->filterByType($select, 'page');
-                    $this->filterByUrl($select, $value);
+                    $genericParams['type'] = 'page';
+                    $genericParams['url'] = get_view()->stats()->checkAndCleanUrl($value);
                     break;
                 case 'stat_record':
-                    $this->filterByType($select, 'record');
+                    $genericParams['type'] = 'record';
                     $this->filterByRecord($select, $value);
                     break;
                 case 'stat_record_type':
-                    $this->filterByType($select, 'record');
-                    $this->filterByRecordType($select, $value);
+                    $genericParams['type'] = 'record';
+                    $genericParams['record_type'] = get_view()->stats()->checkRecordType($value);
                     break;
                 case 'stat_download':
-                    $this->filterByDownload($select, $value);
+                    $genericParams['type'] = 'download';
+                    if (is_numeric($value)) {
+                        $this->filterByRecord($select, array(
+                            'record_type' => 'File',
+                            'record_id' => $value,
+                        ));
+                    }
+                    else {
+                        $genericParams['url'] = get_view()->stats()->checkAndCleanUrl($value);
+                    }
                     break;
                 case 'stat_downloads':
                     $this->filterByDownloads($select, $value);
                     break;
-                case 'total':
-                    parent::applySearchFilters($select, array('hits' => $value));
-                    break;
-                case 'identified':
-                    parent::applySearchFilters($select, array('hits_identified' => $value));
-                    break;
-                case 'anonymous':
-                    parent::applySearchFilters($select, array('hits_anonymous' => $value));
-                    break;
                 case 'not_zero':
                     $this->filterByNotZero($select, $value);
                     break;
+                case 'total':
+                    $genericParams['hits'] = $value;
+                    break;
+                case 'identified':
+                    $genericParams['hits_identified'] = $value;
+                    break;
+                case 'anonymous':
+                    $genericParams['hits_anonymous'] = $value;
+                    break;
                 default:
-                    parent::applySearchFilters($select, array($key => $value));
+                    $genericParams[$key] = $value;
             }
+        }
+
+        if (!empty($genericParams)) {
+            parent::applySearchFilters($select, $genericParams);
         }
 
         // If we returning the data itself, we need to group by the record id.
@@ -592,20 +606,6 @@ class Table_Stat extends Omeka_Db_Table
     }
 
     /**
-     * Filter hits by url(s) after check.
-     *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param string $url
-     * @return void
-     */
-    public function filterByUrl($select, $url)
-    {
-        $url = get_view()->stats()->checkAndCleanUrl($url);
-        parent::applySearchFilters($select, array('url' => $url));
-    }
-
-    /**
      * Filter stats by record (or without record).
      *
      * @param Omeka_Db_Select
@@ -618,19 +618,6 @@ class Table_Stat extends Omeka_Db_Table
         $record = get_view()->stats()->checkAndPrepareRecord($record);
         $select->where("`$alias`.`record_type` = ?", $record['record_type']);
         $select->where("`$alias`.`record_id` = ?", $record['record_id']);
-    }
-
-    /**
-     * Filter hits by record type (or without).
-     *
-     * @param Omeka_Db_Select
-     * @param string|array $recordType If array, contains record type.
-     * @return void
-     */
-    public function filterByRecordType($select, $recordType)
-    {
-        $recordType = get_view()->stats()->checkRecordType($recordType);
-        parent::applySearchFilters($select, array('record_type' => $recordType));
     }
 
     /**
@@ -670,27 +657,6 @@ class Table_Stat extends Omeka_Db_Table
             else {
                 $select->where("`$alias`.`type` != 'download'");
             }
-        }
-    }
-
-    /**
-     * Filter direct download hit.
-     *
-     * @param Omeka_Db_Select
-     * @param string|integer $downloadId
-     * @return void
-     */
-    public function filterByDownload($select, $downloadId)
-    {
-        $this->filterByType($select, 'download');
-        if (is_numeric($downloadId)) {
-            $this->filterByRecord($select, array(
-                'record_type' => 'File',
-                'record_id' => $downloadId,
-            ));
-        }
-        else {
-            $this->filterByUrl($select, $downloadId);
         }
     }
 

@@ -411,19 +411,20 @@ class Table_Hit extends Omeka_Db_Table
     {
         $alias = $this->getTableAlias();
         $boolean = new Omeka_Filter_Boolean;
+        $genericParams = array();
         foreach ($params as $key => $value) {
             if ($value === null || (is_string($value) && trim($value) == '')) {
                 continue;
             }
             switch ($key) {
                 case 'url':
-                    $this->filterByUrl($select, $value);
+                    $genericParams['url'] = get_view()->stats()->checkAndCleanUrl($value);
                     break;
                 case 'record':
                     $this->filterByRecord($select, $value);
                     break;
                 case 'record_type':
-                    $this->filterByRecordType($select, $value);
+                    $genericParams['record_type'] = get_view()->stats()->checkRecordType($value);
                     break;
                 case 'has_record':
                     $this->filterByHasRecord($select, $value);
@@ -451,26 +452,16 @@ class Table_Hit extends Omeka_Db_Table
                     $this->filterByNotEmpty($select, $value);
                     break;
                 default:
-                    parent::applySearchFilters($select, array($key => $value));
+                    $genericParams[$key] = $value;
             }
+        }
+
+        if (!empty($genericParams)) {
+            parent::applySearchFilters($select, $genericParams);
         }
 
         // If we returning the data itself, we need to group by the record id.
         $select->group("$alias.id");
-    }
-
-    /**
-     * Filter hits by url(s) after check.
-     *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param string $url
-     * @return void
-     */
-    public function filterByUrl($select, $url)
-    {
-        $url = get_view()->stats()->checkAndCleanUrl($url);
-        parent::applySearchFilters($select, array('url' => $url));
     }
 
     /**
@@ -487,20 +478,6 @@ class Table_Hit extends Omeka_Db_Table
         $record = get_view()->stats()->checkAndPrepareRecord($record);
         $select->where("`$alias`.`record_type` = ?", $record['record_type']);
         $select->where("`$alias`.`record_id` = ?", $record['record_id']);
-    }
-
-    /**
-     * Filter hits by record type (or without).
-     *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param string|array $recordType If array, contains record type.
-     * @return void
-     */
-    public function filterByRecordType($select, $recordType)
-    {
-        $recordType = get_view()->stats()->checkRecordType($recordType);
-        parent::applySearchFilters($select, array('record_type' => $recordType));
     }
 
     /**
