@@ -8,16 +8,14 @@
  */
 class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
 {
-    protected $_tableStat;
-
-    private $_stats = array();
+    protected $_table;
 
     /**
      * Load the hit table one time only.
      */
     public function __construct()
     {
-        $this->_tableStat = get_db()->getTable('Stat');
+        $this->_table = get_db()->getTable('Stat');
     }
 
     /**
@@ -63,7 +61,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
         if (is_null($url)) {
             $url = current_url();
         }
-        return $this->_tableStat->getTotalPage($url, $userStatus);
+        return $this->_table->getTotalPage($url, $userStatus);
     }
 
     /**
@@ -76,7 +74,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function total_record($record, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getTotalRecord($record, $userStatus);
+        return $this->_table->getTotalRecord($record, $userStatus);
     }
 
     /**
@@ -89,7 +87,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function total_record_type($recordType, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getTotalRecordType($recordType, $userStatus);
+        return $this->_table->getTotalRecordType($recordType, $userStatus);
     }
 
     /**
@@ -105,7 +103,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function total_download($value, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getTotalDownload($value, $userStatus);
+        return $this->_table->getTotalDownload($value, $userStatus);
     }
 
     /**
@@ -123,7 +121,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
         }
         // Call getPosition() and not getPositionPage() to simplify process of
         // page or download. The check is made later.
-        return $this->_tableStat->getPosition(array('url' => $url), $userStatus);
+        return $this->_table->getPosition(array('url' => $url), $userStatus);
     }
 
     /**
@@ -136,7 +134,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function position_record($record, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getPositionRecord($record, $userStatus);
+        return $this->_table->getPositionRecord($record, $userStatus);
     }
 
     /**
@@ -154,7 +152,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function position_download($value, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_tableStat->getPositionDownload($value, $userStatus);
+        return $this->_table->getPositionDownload($value, $userStatus);
     }
 
     /**
@@ -173,8 +171,8 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     {
         $userStatus = $this->_getUserStatus($userStatus);
         $stats = ($sort == 'last')
-            ? $this->_tableStat->getLastViewedPages($hasRecord, $userStatus, $limit, $page)
-            : $this->_tableStat->getMostViewedPages($hasRecord, $userStatus, $limit, $page);
+            ? $this->_table->getLastViewedPages($hasRecord, $userStatus, $limit, $page)
+            : $this->_table->getMostViewedPages($hasRecord, $userStatus, $limit, $page);
 
         return $asHtml
             ? $this->_viewedHtml($stats, 'page', $sort, $userStatus)
@@ -211,8 +209,8 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
 
         $userStatus = $this->_getUserStatus($userStatus);
         $stats = ($sort == 'last')
-            ? $this->_tableStat->getLastViewedRecords($recordType, $userStatus, $limit, $page)
-            : $this->_tableStat->getMostViewedRecords($recordType, $userStatus, $limit, $page);
+            ? $this->_table->getLastViewedRecords($recordType, $userStatus, $limit, $page)
+            : $this->_table->getMostViewedRecords($recordType, $userStatus, $limit, $page);
 
         return $asHtml
             ? $this->_viewedHtml($stats, 'record', $sort, $userStatus)
@@ -233,8 +231,8 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     {
         $userStatus = $this->_getUserStatus($userStatus);
         $stats = ($sort == 'last')
-            ? $this->_tableStat->getLastViewedDownloads($userStatus, $limit, $page)
-            : $this->_tableStat->getMostViewedDownloads($userStatus, $limit, $page);
+            ? $this->_table->getLastViewedDownloads($userStatus, $limit, $page)
+            : $this->_table->getMostViewedDownloads($userStatus, $limit, $page);
 
         return $asHtml
             ? $this->_viewedHtml($stats, 'download', $sort, $userStatus)
@@ -286,7 +284,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
             $url = current_url();
         }
         $userStatus = $this->_getUserStatus($userStatus);
-        $stat = $this->_tableStat->findByUrl($url);
+        $stat = $this->_table->findByUrl($url);
         return common('stats-value', array(
             'type' => 'page',
             'stat' => $stat,
@@ -310,7 +308,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
             return '';
         }
         $userStatus = $this->_getUserStatus($userStatus);
-        $stat = $this->_tableStat->findByRecord($record);
+        $stat = $this->_table->findByRecord($record);
         return common('stats-value', array(
             'type' => 'record',
             'stat' => $stat,
@@ -329,7 +327,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     public function text_download($downloadId, $userStatus = null)
     {
         $userStatus = $this->_getUserStatus($userStatus);
-        $stat = $this->_tableStat->findByDownload($downloadId);
+        $stat = $this->_table->findByDownload($downloadId);
         return common('stats-value', array(
             'type' => 'download',
             'stat' => $stat,

@@ -34,7 +34,7 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
      */
     public function indexAction()
     {
-        $this->_forward('by-page');
+        $this->forward('by-page');
     }
 
     /**
@@ -44,7 +44,7 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
      */
     public function browseAction()
     {
-        $this->_forward('by-page');
+        $this->forward('by-page');
     }
 
     /**

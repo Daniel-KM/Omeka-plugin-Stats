@@ -204,7 +204,7 @@ Copyright
 * Copyright Daniel Berthereau, 2014
 
 
-[Omeka]: https://omeka.org "Omeka.org"
+[Omeka]: https://omeka.org
 [Stats]: https://github.com/Daniel-KM/Stats
 [Piwik]: https://piwik.org
 [Google Analytics]: http://www.google.com/analytics
@@ -214,7 +214,7 @@ Copyright
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
 [Stats issues]: https://github.com/Daniel-KM/Stat/issues
 [CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
-[GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
+[GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org
 [Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"

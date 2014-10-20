@@ -12,6 +12,7 @@
 
 /**
  * The Stats plugin.
+ *
  * @package Omeka\Plugins\Stats
  */
 class StatsPlugin extends Omeka_Plugin_AbstractPlugin
@@ -171,9 +172,9 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Shows plugin configuration page.
      */
-    public function hookConfigForm()
+    public function hookConfigForm($args)
     {
-        $view = get_view();
+        $view = $args['view'];
 
         // Default hooks in Omeka Core.
         $displayByHooks = array(
@@ -190,7 +191,8 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         );
 
         echo $view->partial(
-            'plugins/stats-config-form.php', array(
+            'plugins/stats-config-form.php',
+            array(
                 'view' => $view,
                 'displayByHooks' => $displayByHooks,
                 'displayByHooksSelected' => unserialize(get_option('stats_display_by_hooks')),
@@ -334,6 +336,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $html = '<div class="panel">';
         $html .= '<h4>' . __('Stats') . '</h4>';
         $html .= $this->_resultRecord($args);
+        $html .= '</div>';
 
         echo $html;
     }
