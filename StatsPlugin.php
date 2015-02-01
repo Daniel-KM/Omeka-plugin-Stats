@@ -648,6 +648,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $result = null;
         $type = isset($args['type']) ? $args['type'] : null;
         $recordType = isset($args['record_type']) ? $args['record_type'] : null;
+        $recordType = ucfirst(strtolower($recordType));
         $recordId = (!empty($recordType) && is_string($recordType) && isset($args['record_id']))
             ? $args['record_id']
             : null;

@@ -140,7 +140,9 @@ class Table_Hit extends Omeka_Db_Table
 
         $select
             ->reset(Zend_Db_Select::COLUMNS)
-            ->columns("COUNT(DISTINCT(`$alias`.`$field`))")
+            ->columns(array(
+                'hits' => new Zend_Db_Expr("COUNT(DISTINCT(`$alias`.`$field`))"),
+            ))
             ->reset(Zend_Db_Select::GROUP);
 
         // Remove empty values.
@@ -177,9 +179,9 @@ class Table_Hit extends Omeka_Db_Table
         $select
             ->reset(Zend_Db_Select::COLUMNS)
             ->columns(array(
-                    "$alias.$field",
-                    "COUNT(`$alias`.`id`) AS hits",
-                ))
+                "$alias.$field",
+                'hits' => new Zend_Db_Expr('COUNT(*)'),
+            ))
             ->reset(Zend_Db_Select::GROUP)
             ->group("$alias.$field");
 
@@ -267,12 +269,12 @@ class Table_Hit extends Omeka_Db_Table
         $select
             ->reset(Zend_Db_Select::COLUMNS)
             ->columns(array(
-                    "$alias.url",
-                    "$alias.record_type",
-                    "$alias.record_id",
-                    "COUNT(`$alias`.`id`) AS hits",
-                    // "@position:=@position+1 AS position",
-                ))
+                'url' => "$alias.url",
+                'record_type' => "$alias.record_type",
+                'record_id' => "$alias.record_id",
+                'hits' => new Zend_Db_Expr('COUNT(*)'),
+                // "@position:=@position+1 AS position",
+            ))
             ->reset(Zend_Db_Select::GROUP)
             ->group("$alias.url");
 

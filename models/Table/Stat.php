@@ -79,7 +79,9 @@ class Table_Stat extends Omeka_Db_Table
 
         $select = $this->getSelectForCount($params)
             ->reset(Zend_Db_Select::COLUMNS)
-            ->from(array(), "SUM(`$alias`.`$userStatus`)")
+            ->columns(array(
+                'hits' => new Zend_Db_Expr("SUM(`$alias`.`$userStatus`)")
+            ))
             ->limit(1);
 
         return $this->getDb()->fetchOne($select);
@@ -188,7 +190,9 @@ class Table_Stat extends Omeka_Db_Table
         // Build the sub-query to get the hits number for this url or record.
         $subSelect = $this->getSelectForCount($params)
             ->reset(Zend_Db_Select::COLUMNS)
-            ->from(array(), "$alias.$userStatus")
+            ->columns(array(
+                "$alias.$userStatus",
+            ))
             // Limit by one, but there can't be more than one row.
             ->limit(1);
 
@@ -224,7 +228,9 @@ class Table_Stat extends Omeka_Db_Table
         }
         $select = $this->getSelectForCount($paramsSelect)
             ->reset(Zend_Db_Select::COLUMNS)
-            ->from(array(), "COUNT(`$alias`.`id`) + 1")
+            ->columns(array(
+                'num' => new Zend_Db_Expr('COUNT(*) + 1'),
+            ))
             ->where("`$alias`.`$userStatus` > ?", $hits);
 
         $result = $this->getDb()->fetchOne($select);
