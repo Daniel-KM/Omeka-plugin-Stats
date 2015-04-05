@@ -473,7 +473,7 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
             $recordId = $record->id;
         }
         elseif (is_array($record)) {
-            if (isset($record['record_type']) && isset($record['record_type'])) {
+            if (isset($record['record_type']) && isset($record['record_id'])) {
                 $recordType = $record['record_type'];
                 $recordId = $record['record_id'];
             }

@@ -199,7 +199,7 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
      *
      * @return int
      */
-    protected function _getBrowseRecordsPerPage()
+    protected function _getBrowseRecordsPerPage($pluralName = null)
     {
         return is_admin_theme()
             ? (int) get_option('stats_per_page_admin')
