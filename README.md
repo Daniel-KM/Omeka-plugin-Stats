@@ -1,9 +1,6 @@
 Stats (plugin for Omeka)
 ========================
 
-About
------
-
 [Stats] is a plugin for [Omeka] that counts views of pages in order to know the
 least popular record and the most viewed pages. It provides useful infos on
 visitors too (language, referrer...). So this is an analytics tool like [Piwik]
@@ -165,7 +162,7 @@ roll back if needed.
 Troubleshooting
 ---------------
 
-See online issues on the [Stats issues] page on GitHub.
+See online issues on the [plugin issues] page on GitHub.
 
 
 License
@@ -201,7 +198,7 @@ Current maintainers:
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2014
+* Copyright Daniel Berthereau, 2014-2015
 
 
 [Omeka]: https://omeka.org
@@ -212,7 +209,7 @@ Copyright
 [LibreOffice]: https://www.documentfoundation.org
 [Shortcodes]: http://omeka.org/codex/Shortcodes
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
-[Stats issues]: https://github.com/Daniel-KM/Stat/issues
+[plugin issues]: https://github.com/Daniel-KM/Stats/issues
 [CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
