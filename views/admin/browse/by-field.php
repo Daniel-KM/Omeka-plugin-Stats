@@ -18,7 +18,7 @@ echo common('stats-nav');
 <?php if ($total_results):
     echo pagination_links();
     ?>
-    <table class="stats-table" cellspacing="0" cellpadding="0">
+    <table class="stats-table">
     <thead>
         <tr>
             <?php

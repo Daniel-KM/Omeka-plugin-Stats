@@ -1,7 +1,7 @@
 <fieldset id="fieldset-stats-rights"><legend><?php echo __('Rights and Roles'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_browse_roles', __('Table of Rights')); ?>
+            <?php echo $this->formLabel('stats_browse_roles', __('Table of Rights')); ?>
         </div>
         <div class="inputs five columns omega">
             <div class="input-block">
@@ -42,7 +42,7 @@
                     $userRoles = get_user_roles();
                     unset($userRoles['super']);
                 ?>
-                <table class="stats-righs" cellspacing="0" cellpadding="0">
+                <table class="stats-righs">
                 <thead>
                     <tr>
                         <th></th>
@@ -61,12 +61,12 @@
                         printf('<tr class="%s">', (++$key % 2 == 1) ? 'odd' : 'even');
                         echo '<td>' . $right['label'].  '</td>';
                         echo '<td>';
-                        echo $view->formCheckbox($right['public'], true,
+                        echo $this->formCheckbox($right['public'], true,
                             array('checked' => (boolean) get_option($right['public'])));
                         echo '</td>';
                         foreach ($userRoles as $role => $label):
                             echo '<td>';
-                            echo $view->formCheckbox($currentRole . '[]', $role,
+                            echo $this->formCheckbox($currentRole . '[]', $role,
                                 array('checked' => in_array($role, $currentRoles) ? 'checked' : ''));
                             echo '</td>';
                         endforeach;
@@ -86,10 +86,10 @@
     ?></p>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_default_user_status_admin', __('User status for admin pages')); ?>
+            <?php echo $this->formLabel('stats_default_user_status_admin', __('User status for admin pages')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo get_view()->formRadio('stats_default_user_status_admin',
+            <?php echo $this->formRadio('stats_default_user_status_admin',
                 get_option('stats_default_user_status_admin'),
                 null,
                 array(
@@ -104,10 +104,10 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_default_user_status_public', __('User status for public pages')); ?>
+            <?php echo $this->formLabel('stats_default_user_status_public', __('User status for public pages')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo get_view()->formRadio('stats_default_user_status_public',
+            <?php echo $this->formRadio('stats_default_user_status_public',
                 get_option('stats_default_user_status_public'),
                 null,
                 array(
@@ -122,11 +122,11 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_per_page_admin', __('Results Per Page (admin)')); ?>
+            <?php echo $this->formLabel('stats_per_page_admin', __('Results Per Page (admin)')); ?>
         </div>
         <div class="inputs five columns omega">
             <div class="input-block">
-                <?php echo $view->formText('stats_per_page_admin',
+                <?php echo $this->formText('stats_per_page_admin',
                     get_option('stats_per_page_admin')); ?>
                 <p class="explanation">
                     <?php echo __('Limit the number of results displayed per page in the administrative interface.'); ?>
@@ -136,11 +136,11 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_per_page_public', __('Results Per Page (public)')); ?>
+            <?php echo $this->formLabel('stats_per_page_public', __('Results Per Page (public)')); ?>
         </div>
         <div class="inputs five columns omega">
             <div class="input-block">
-                <?php echo $view->formText('stats_per_page_public',
+                <?php echo $this->formText('stats_per_page_public',
                     get_option('stats_per_page_public')); ?>
                 <p class="explanation">
                     <?php echo __('Limit the number of results displayed per page in the public interface.'); ?>
@@ -152,7 +152,7 @@
 <fieldset id="fieldset-stats-display-by-hooks"><legend><?php echo __('Display by Hooks'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_display_by_hooks', __('Pages where hits are shown via hooks')); ?>
+            <?php echo $this->formLabel('stats_display_by_hooks', __('Pages where hits are shown via hooks')); ?>
         </div>
         <div class="inputs five columns omega">
             <div class="input-block">
@@ -160,7 +160,7 @@
                 <?php
                     foreach ($displayByHooks as $page) {
                         echo '<li>';
-                        echo $view->formCheckbox('stats_display_by_hooks[]', $page,
+                        echo $this->formCheckbox('stats_display_by_hooks[]', $page,
                             array('checked' => in_array($page, $displayByHooksSelected) ? 'checked' : ''));
                         echo $page;
                         echo '</li>';
@@ -178,10 +178,10 @@
 <fieldset id="fieldset-stats-privacy"><legend><?php echo __('Privacy'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('stats_privacy', __('Level of Privacy')); ?>
+            <?php echo $this->formLabel('stats_privacy', __('Level of Privacy')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo get_view()->formRadio('stats_privacy',
+            <?php echo $this->formRadio('stats_privacy',
                 get_option('stats_privacy'),
                 null,
                 array(

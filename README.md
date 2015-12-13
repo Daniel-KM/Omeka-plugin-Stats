@@ -192,6 +192,7 @@ Contact
 -------
 
 Current maintainers:
+
 * Daniel Berthereau (see [Daniel-KM] on GitHub)
 
 
@@ -207,10 +208,10 @@ Copyright
 [Google Analytics]: http://www.google.com/analytics
 [web loggers]: https://en.wikipedia.org/wiki/List_of_web_analytics_software
 [LibreOffice]: https://www.documentfoundation.org
-[Shortcodes]: http://omeka.org/codex/Shortcodes
+[Shortcodes]: https://omeka.org/codex/Shortcodes
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
 [plugin issues]: https://github.com/Daniel-KM/Stats/issues
-[CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
+[CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org

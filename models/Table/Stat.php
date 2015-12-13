@@ -84,7 +84,7 @@ class Table_Stat extends Omeka_Db_Table
             ))
             ->limit(1);
 
-        return $this->getDb()->fetchOne($select);
+        return $this->_db->fetchOne($select);
     }
 
     /**
@@ -198,7 +198,7 @@ class Table_Stat extends Omeka_Db_Table
 
         // The sub-query is requested immediatly in order to manage zero viewed
         // records simply.
-        $hits = $this->getDb()->fetchOne($subSelect);
+        $hits = $this->_db->fetchOne($subSelect);
         if (empty($hits)) {
             return 0;
         }
@@ -233,7 +233,7 @@ class Table_Stat extends Omeka_Db_Table
             ))
             ->where("`$alias`.`$userStatus` > ?", $hits);
 
-        $result = $this->getDb()->fetchOne($select);
+        $result = $this->_db->fetchOne($select);
         return $result;
     }
 
@@ -682,18 +682,18 @@ class Table_Stat extends Omeka_Db_Table
         switch($record['record_type']) {
             case 'Item':
                 $select->joinInner(
-                    array('files' => $this->getDb()->File),
+                    array('files' => $this->_db->File),
                     "stats.record_type = 'File' AND stats.record_id = files.id",
                     array());
                 $select->where("`files`.`item_id` = ?", $record['record_id']);
                 break;
             case 'Collection':
                 $select->joinInner(
-                    array('files' => $this->getDb()->File),
+                    array('files' => $this->_db->File),
                     "stats.record_type = 'File' AND stats.record_id = files.id",
                     array());
                 $select->joinInner(
-                    array('items' => $this->getDb()->Item),
+                    array('items' => $this->_db->Item),
                     'files.item_id = items.id',
                     array());
                 $select->where("`items`.`collection_id` = ?", $record['record_id']);

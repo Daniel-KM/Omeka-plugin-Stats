@@ -14,7 +14,7 @@ echo common('stats-nav');
 <?php if ($total_results):
     echo pagination_links();
     ?>
-    <table class="stats-table" cellspacing="0" cellpadding="0">
+    <table class="stats-table">
     <thead>
         <tr>
             <?php
@@ -35,7 +35,7 @@ echo common('stats-nav');
         <tr class="stats-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
             <td class="stats-url">
                 <div class="stats-hover">
-                    <a href="<?php echo WEB_ROOT . $stat->url; ?>"><?php echo $stat->url; ?></span>
+                    <a href="<?php echo WEB_ROOT . $stat->url; ?>"><?php echo $stat->url; ?></a>
                 </div>
             </td>
             <td class="stats-hits">

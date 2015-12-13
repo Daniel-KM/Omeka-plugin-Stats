@@ -174,8 +174,6 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
      */
     public function hookConfigForm($args)
     {
-        $view = $args['view'];
-
         // Default hooks in Omeka Core.
         $displayByHooks = array(
             'admin_dashboard',
@@ -190,12 +188,12 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
             'public_collections_browse_each',
         );
 
+        $view = get_view();
         echo $view->partial(
             'plugins/stats-config-form.php',
             array(
-                'view' => $view,
                 'displayByHooks' => $displayByHooks,
-                'displayByHooksSelected' => unserialize(get_option('stats_display_by_hooks')),
+                'displayByHooksSelected' => unserialize(get_option('stats_display_by_hooks')) ?: array(),
         ));
     }
 
@@ -207,20 +205,20 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
     public function hookConfig($args)
     {
         $post = $args['post'];
-        foreach (array(
-                'stats_roles_summary',
-                'stats_roles_browse_pages',
-                'stats_roles_browse_records',
-                'stats_roles_browse_downloads',
-                'stats_roles_browse_fields',
-                'stats_display_by_hooks',
-            ) as $posted) {
-            $post[$posted] = isset($post[$posted])
-                ? serialize($post[$posted])
-                : serialize(array());
-        }
-        foreach ($post as $key => $value) {
-            set_option($key, $value);
+        foreach ($this->_options as $optionKey => $optionValue) {
+            if (isset($post[$optionKey])) {
+                if (in_array($optionKey, array(
+                        'stats_roles_summary',
+                        'stats_roles_browse_pages',
+                        'stats_roles_browse_records',
+                        'stats_roles_browse_downloads',
+                        'stats_roles_browse_fields',
+                        'stats_display_by_hooks',
+                    ))) {
+                   $post[$optionKey] = serialize($post[$optionKey]) ?: serialize(array());
+                }
+                set_option($optionKey, $post[$optionKey]);
+            }
         }
     }
 

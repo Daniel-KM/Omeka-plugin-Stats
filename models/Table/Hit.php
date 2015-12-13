@@ -148,7 +148,7 @@ class Table_Hit extends Omeka_Db_Table
         // Remove empty values.
         $this->filterByNotEmpty($select, $field);
 
-        return $this->getDb()->fetchOne($select);
+        return $this->_db->fetchOne($select);
     }
 
     /**
@@ -198,7 +198,7 @@ class Table_Hit extends Omeka_Db_Table
         }
 
         // Return an array with two columns.
-        $result = $this->getDb()->query($select, array())->fetchAll();
+        $result = $this->_db->query($select, array())->fetchAll();
         return $result;
     }
 
@@ -288,7 +288,7 @@ class Table_Hit extends Omeka_Db_Table
         }
 
         // Return an array with four columns.
-        $result = $this->getDb()->query($select, array())->fetchAll();
+        $result = $this->_db->query($select, array())->fetchAll();
         return $result;
     }
 
