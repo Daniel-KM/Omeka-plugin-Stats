@@ -442,10 +442,10 @@ class Table_Hit extends Omeka_Db_Table
                     $this->filterByUserStatus($select, $value);
                     break;
                 case 'since':
-                    $this->filterBySince($select, $value);
+                    $this->filterBySince($select, $value, 'added');
                     break;
                 case 'until':
-                    $this->filterByUntil($select, $value);
+                    $this->filterByUntil($select, $value, 'added');
                     break;
                 case 'field':
                     $this->filterByField($select, $value);
@@ -549,32 +549,19 @@ class Table_Hit extends Omeka_Db_Table
     }
 
     /**
-     * Filter select object by date since.
-     *
-     * @param Zend_Db_Select $select
-     * @param string $dateSince ISO 8601 formatted date
-     */
-    public function filterBySince($select, $dateSince)
-    {
-        // Accept an ISO 8601 date, set the tiemzone to the server's default
-        // timezone, and format the date to be MySQL timestamp compatible.
-        $date = new Zend_Date($dateSince, Zend_Date::ISO_8601);
-        $date->setTimezone(date_default_timezone_get());
-        $date = $date->get('yyyy-MM-dd HH:mm:ss');
-
-        // Select all dates that are greater than the passed date.
-        $alias = $this->getTableAlias();
-        $select->where("`$alias`.`added` >= ?", $date);
-    }
-
-    /**
      * Filter select object by date until.
      *
      * @param Zend_Db_Select $select
      * @param string $dateSince ISO 8601 formatted date (now if empty)
+     * @param string $dateField "added" or "modified"
      */
-    public function filterByUntil($select, $dateUntil)
+    public function filterByUntil($select, $dateUntil, $dateField)
     {
+        // Reject invalid date fields.
+        if (!in_array($dateField, array('added', 'modified'))) {
+            return;
+        }
+
         // Accept an ISO 8601 date, set the tiemzone to the server's default
         // timezone, and format the date to be MySQL timestamp compatible.
         $date = new Zend_Date($dateUntil, Zend_Date::ISO_8601);
@@ -583,7 +570,7 @@ class Table_Hit extends Omeka_Db_Table
 
         // Select all dates that are greater than the passed date.
         $alias = $this->getTableAlias();
-        $select->where("`$alias`.`added` <= ?", $date);
+        $select->where("`$alias`.`$dateField` <= ?", $date);
     }
 
     /**
