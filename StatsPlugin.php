@@ -615,34 +615,37 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
             $module = isset($args['module']) ? $args['module'] : 'default';
             $controller = isset($args['controller']) ? $args['controller'] : 'index';
             $action = isset($args['action']) ? $args['action'] : 'index';
+            $record = null;
             switch ($module) {
                 case 'default':
-                    if ($action == 'show') {
-                        if (in_array($controller, array('items', 'collections', 'files'))) {
-                            $records[] = get_current_record(Inflector::singularize($controller));
-                        }
-                        break;
+                    if ($action == 'show' && in_array($controller, array('items', 'collections', 'files'))) {
+                        $record = Inflector::singularize($controller);
                     }
                     break;
 
                 case 'simple-pages':
-                    if ($controller == 'page'
-                            && $action == 'show'
-                        ) {
-                        $records[] = get_current_record('simple_pages_page');
+                    if ($controller == 'page' && $action == 'show') {
+                        $record = 'simple_pages_page';
                     }
                     break;
 
                 case 'exhibit-builder':
                     if ($controller == 'exhibits') {
                         if ($action == 'summary') {
-                            $records[] = get_current_record('exhibit');
+                            $record = 'exhibit';
                         }
                         elseif ($action == 'show') {
-                            $records[] = get_current_record('exhibit_page');
+                            $record = 'exhibit_page';
                         }
                     }
                     break;
+            }
+
+            if ($record) {
+                $record = get_current_record($record, false);
+                if (is_object($record)) {
+                    $records[] = $record;
+                }
             }
         }
 
