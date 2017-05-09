@@ -25,7 +25,7 @@ echo common('stats-nav');
             $browseHeadings[__('Dedicated Record')] = null;
             $browseHeadings[__('Record Type')] = 'record_type';
             $browseHeadings[__('Date')] = 'modified';
-            echo browse_sort_links($browseHeadings, array('link_tag' => 'th scope="col"', 'list_tag' => ''));
+            echo browse_sort_links($browseHeadings, array('link_tag' => 'th', 'link_attr' => array('scope' => 'col'), 'list_tag' => ''));
             ?>
         </tr>
     </thead>
