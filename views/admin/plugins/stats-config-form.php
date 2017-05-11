@@ -200,3 +200,21 @@
         </div>
     </div>
 </fieldset>
+<fieldset id="fieldset-stats-misc"><legend><?php echo __('Misc'); ?></legend>
+    <div class="field">
+        <div class="two columns alpha">
+            <?php echo $this->formLabel('stats_excludebots', __('Exclude crawlers/bots')); ?>
+        </div>
+        <div class="inputs five columns omega">
+
+            <?php 
+                echo "\n".$this->formCheckbox('stats_excludebots', true,
+                            array('checked' => (boolean) get_option("stats_excludebots")));
+            ?>
+            <p class="explanation">
+                <?php echo __('By checking this box, all hits which user agent contains the term bot will be excluded.');
+                ?>
+            </p>
+        </div>
+    </div>
+</fieldset>
