@@ -123,6 +123,17 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
     }
 
     /**
+     * Determine whether or not the hit is from a bot/webcrawler
+     *
+     * @return boolean True if hit is from a bot, otherwise False
+     */
+    public function isBot()
+    {
+        return (strpos($this->user_agent, 'bot') !== false) ;
+    }
+
+
+    /**
      * Determine whether or not the hit is a direct download.
      *
      * @return boolean True if hit has a record, even deleted.
