@@ -135,6 +135,7 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
 						(strpos($this->user_agent, 'bot') !== false) ||
 						(strpos($this->user_agent, 'slurp') !== false) ||
 						(strpos($this->user_agent, 'crawler') !== false) ||
+						(strpos($this->user_agent, 'check_http') !== false) ||
 						(strpos($this->user_agent, 'spider') !== false)
 					);
     }
