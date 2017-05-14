@@ -76,6 +76,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         'stats_display_by_hooks' => 'a:10:{i:0;s:15:"admin_dashboard";i:1;s:24:"admin_items_show_sidebar";i:2;s:30:"admin_collections_show_sidebar";i:3;s:24:"admin_files_show_sidebar";i:4;s:30:"admin_items_browse_simple_each";i:5;s:32:"admin_items_browse_detailed_each";i:6;s:17:"public_items_show";i:7;s:24:"public_items_browse_each";i:8;s:23:"public_collections_show";i:9;s:30:"public_collections_browse_each";}',
         // Privacy settings.
         'stats_privacy' => 'hashed',
+        'stats_excludebots' => 0
     );
 
     /**
@@ -783,7 +784,11 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $hit = new Hit;
         $hit->setCurrentHit();
-        $hit->save();
+
+        // The hit is saved only if if stats_excludebots setting is set and the request is from a bot
+        if ( (!get_option("stats_excludebots")) || (!$hit->isBot()) ) {
+            $hit->save();
+        }
     }
 
     /**
