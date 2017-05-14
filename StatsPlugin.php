@@ -785,7 +785,8 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $hit = new Hit;
         $hit->setCurrentHit();
 
-        // The hit is saved only if if stats_excludebots setting is set and the request is from a bot
+        // The hit is saved only if stats_excludebots setting is set and the
+        // request is from a bot.
         if ( (!get_option("stats_excludebots")) || (!$hit->isBot()) ) {
             $hit->save();
         }

@@ -129,15 +129,10 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
      */
     public function isBot()
     {
-			print "<!-- UA : ".$this->user_agent." -->";
-        return 
-					(
-						(strpos($this->user_agent, 'bot') !== false) ||
-						(strpos($this->user_agent, 'slurp') !== false) ||
-						(strpos($this->user_agent, 'crawler') !== false) ||
-						(strpos($this->user_agent, 'check_http') !== false) ||
-						(strpos($this->user_agent, 'spider') !== false)
-					);
+        // For dev purpose.
+        // print "<!-- UA : ".$this->user_agent." -->";
+        $crawlers = 'bot|crawler|slurp|spider|check_http';
+        return (boolean) preg_match("~$crawler~", $this->user_agent);
     }
 
 
