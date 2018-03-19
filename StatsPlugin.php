@@ -245,7 +245,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Defines the plugin's access control list.
      *
-     * @param object $args
+     * @param array $args
      */
     public function hookDefineAcl($args)
     {

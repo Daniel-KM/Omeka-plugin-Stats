@@ -24,7 +24,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
      */
     public function indexAction()
     {
-        $this->_forward('files');
+        $this->forward('files');
     }
 
     /**

@@ -155,8 +155,8 @@ Warning
 
 Use it at your own risk.
 
-It's always recommended to backup your files and database regularly so you can
-roll back if needed.
+It’s always recommended to backup your files and your databases and to check
+your archives regularly so you can roll back if needed.
 
 
 Troubleshooting
@@ -203,14 +203,14 @@ Copyright
 
 
 [Omeka]: https://omeka.org
-[Stats]: https://github.com/Daniel-KM/Stats
+[Stats]: https://github.com/Daniel-KM/Omeka-plugin-Stats
 [Piwik]: https://piwik.org
 [Google Analytics]: http://www.google.com/analytics
 [web loggers]: https://en.wikipedia.org/wiki/List_of_web_analytics_software
 [LibreOffice]: https://www.documentfoundation.org
 [Shortcodes]: https://omeka.org/codex/Shortcodes
-[Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
-[plugin issues]: https://github.com/Daniel-KM/Stats/issues
+[Archive Repertory]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory
+[plugin issues]: https://github.com/Daniel-KM/Omeka-plugin-Stats/issues
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
