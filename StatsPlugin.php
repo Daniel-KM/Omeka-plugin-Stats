@@ -35,6 +35,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         'admin_files_show_sidebar',
         'admin_items_browse_simple_each',
         'admin_items_browse_detailed_each',
+        'admin_collections_browse_each',
         'public_items_show',
         'public_items_browse_each',
         'public_collections_show',
@@ -381,6 +382,17 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         }
     }
 
+    public function hookAdminCollectionsBrowseEach($args)
+    {
+        if ($this->_checkDisplayStatsByHook('admin_items_browse_simple_each')) {
+            $view = $args['view'];
+            $record = $args['collection'];
+            echo __('Views: %d (position %d)',
+                $view->stats()->total_record($record, get_option('stats_default_user_status_admin')),
+                $view->stats()->position_record($record, get_option('stats_default_user_status_admin')));
+        }
+    }
+
     protected function _resultRecord($args)
     {
         $view = $args['view'];
@@ -551,6 +563,20 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                     $html .= '<ul>';
                     $html .= __('%s (%d views)',
                         $stat->Record ? link_to_item(null, array(), 'show', $stat->Record) : __('Deleted'),
+                        $stat->$userStatus);
+                    $html .= '</ul>';
+                }
+
+                $stats = $tableStat->getMostViewedRecords('Collection', $userStatus, 1);
+                $html .= sprintf('<h4><a href="%s">%s</a></h4>', url('/stats/browse/by-record'), __('Most viewed public collection'));
+                if (empty($stats)) {
+                    $html .= '<p>' . __('None') . '</p>';
+                }
+                else {
+                    $stat = reset($stats);
+                    $html .= '<ul>';
+                    $html .= __('%s (%d views)',
+                        $stat->Record ? link_to_collection(null, array(), 'show', $stat->Record) : __('Deleted'),
                         $stat->$userStatus);
                     $html .= '</ul>';
                 }
