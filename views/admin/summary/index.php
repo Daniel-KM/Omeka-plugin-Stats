@@ -99,6 +99,28 @@ echo common('stats-nav');
     </div>
 </section>
 <?php endif; ?>
+<?php if (isset($results['most_viewed_collections'])): ?>
+<section class="ten columns alpha omega">
+    <div class="panel">
+        <h2><a href="<?php echo url('/stats/browse/by-record'); ?>"><?php echo __('Most viewed public collections'); ?></a></h2>
+        <?php if (empty($results['most_viewed_collections'])): ?>
+        <p><?php echo __('None'); ?></p>
+        <?php else: ?>
+        <ol>
+        <?php foreach ($results['most_viewed_collections'] as $position => $stat): ?>
+            <li><?php
+                echo __('%s (%d views [%d / %d])',
+                    $this->stats()->link_to_record($stat->Record),
+                    $stat->hits,
+                    $stat->hits_anonymous,
+                    $stat->hits_identified);
+            ?></li>
+        <?php endforeach; ?>
+        </ol>
+        <?php endif; ?>
+    </div>
+</section>
+<?php endif; ?>
 <?php if (isset($results['most_viewed_downloads'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">

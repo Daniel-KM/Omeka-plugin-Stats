@@ -72,6 +72,7 @@ class Stats_SummaryController extends Omeka_Controller_AbstractActionController
         }
         if (is_allowed('Stats_Browse', 'by-record')) {
             $results['most_viewed_records'] = $tableStat->getMostViewedRecords(null, $userStatus, 10);
+            $results['most_viewed_collections'] = $tableStat->getMostViewedRecords('Collection', $userStatus, 10);
         }
         if (is_allowed('Stats_Browse', 'by-download')) {
             $results['most_viewed_downloads'] = $tableStat->getMostViewedDownloads($userStatus, 10);
