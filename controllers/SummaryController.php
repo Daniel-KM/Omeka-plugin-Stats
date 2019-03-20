@@ -115,11 +115,10 @@ class Stats_SummaryController extends Omeka_Controller_AbstractActionController
 
         $result = array();
         if (is_admin_theme()) {
-            $result['total'] = $tableHit->count($params);
-            $params['user_status'] = 'hits_anonymous';
-            $result['anonymous'] = $tableHit->count($params);
-            $params['user_status'] = 'hits_identified';
-            $result['identified'] = $tableHit->count($params);
+            $counts = $tableHit->getCountsByUserStatus($params);
+            $result['anonymous'] = $counts['hits_anonymous'];
+            $result['identified'] = $counts['hits_identified'];
+            $result['total'] = $result['anonymous'] + $result['identified'];
         }
         else {
             $params['user_status'] = $userStatus;
