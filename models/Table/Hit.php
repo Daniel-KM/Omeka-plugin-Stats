@@ -608,6 +608,31 @@ class Table_Hit extends Omeka_Db_Table
         }
     }
 
+    public function getCountsByUserStatus($params = array())
+    {
+        $select = $this->getSelectForCount($params);
+
+        $user_status = new Zend_Db_Expr('CASE user_id WHEN 0 THEN "hits_anonymous" ELSE "hits_identified" END');
+
+        $select->reset(Zend_Db_Select::COLUMNS);
+        $select->columns(array(
+            'count' => 'COUNT(*)',
+            'user_status' => $user_status,
+        ));
+        $select->group($user_status);
+
+        $results = $this->_db->query($select, array())->fetchAll();
+        $counts = array(
+            'hits_anonymous' => 0,
+            'hits_identified' => 0,
+        );
+        foreach ($results as $result) {
+            $counts[$result['user_status']] = $result['count'];
+        }
+
+        return $counts;
+    }
+
     /**
      * Get and parse sorting parameters (may be multiples).
      *
