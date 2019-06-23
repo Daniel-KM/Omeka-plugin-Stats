@@ -722,7 +722,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Don't return null.
         $html .=  '<span class="stats-hits">';
-        $html .= (integer) $result;
+        $html .= (int) $result;
         $html .= '</span>';
 
         return $html;
@@ -768,7 +768,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Don't return null.
         $html .=  '<span class="stats-position">';
-        $html .= (integer) $result;
+        $html .= (int) $result;
         $html .= '</span>';
 
         return $html;
@@ -788,8 +788,8 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         $result = null;
         $type = isset($args['type']) ? $args['type'] : null;
         $sort = $this->_getArgumentSort($args);
-        $limit = isset($args['number']) ? (integer) $args['number'] : 10;
-        $offset = isset($args['offset']) ? (integer) $args['offset'] : null;
+        $limit = isset($args['number']) ? (int) $args['number'] : 10;
+        $offset = isset($args['offset']) ? (int) $args['offset'] : null;
 
         // Search by record type.
         if (isset($args['type'])) {

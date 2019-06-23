@@ -62,7 +62,7 @@
                         echo '<td>' . $right['label'].  '</td>';
                         echo '<td>';
                         echo $this->formCheckbox($right['public'], true,
-                            array('checked' => (boolean) get_option($right['public'])));
+                            array('checked' => (bool) get_option($right['public'])));
                         echo '</td>';
                         foreach ($userRoles as $role => $label):
                             echo '<td>';
@@ -208,7 +208,7 @@
         <div class="inputs five columns omega">
             <?php 
                 echo $this->formCheckbox('stats_excludebots', true,
-                    array('checked' => (boolean) get_option("stats_excludebots")));
+                    array('checked' => (bool) get_option("stats_excludebots")));
             ?>
             <p class="explanation">
                 <?php echo __('By checking this box, all hits which user agent contains the term "bot", "crawler", "spider", etc. will be excluded.'); ?>

@@ -369,7 +369,7 @@ class Table_Hit extends Omeka_Db_Table
     public function getLastViewedPages($hasRecord = null, $userStatus = null, $limit = null, $page = null)
     {
         $params = array();
-        $params['has_record'] = (boolean) $hasRecord;
+        $params['has_record'] = (bool) $hasRecord;
         $params['user_status'] = $userStatus;
         $params['sort_field'] = array(
             'added' => 'DESC',
@@ -735,6 +735,6 @@ class Table_Hit extends Omeka_Db_Table
     {
         return (is_object($user) && $user instanceof User)
             ? $user->id
-            : (integer) $user;
+            : (int) $user;
     }
 }

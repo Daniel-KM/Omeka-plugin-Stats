@@ -132,7 +132,7 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
         // For dev purpose.
         // print "<!-- UA : ".$this->user_agent." -->";
         $crawlers = 'bot|crawler|slurp|spider|check_http';
-        return (boolean) preg_match("~$crawlers~", $this->user_agent);
+        return (bool) preg_match("~$crawlers~", $this->user_agent);
     }
 
 
@@ -362,7 +362,7 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
             case 'total_download':
                 return $this->getTotalDownload();
             case 'record_deleted':
-                return $this->hasRecord() ? (boolean) $this->getRecord() : null;
+                return $this->hasRecord() ? (bool) $this->getRecord() : null;
             default:
                 return parent::getProperty($property);
         }
