@@ -69,6 +69,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
         'stats_roles_browse_records' => 'a:1:{i:0;s:5:"admin";}',
         'stats_roles_browse_downloads' => 'a:1:{i:0;s:5:"admin";}',
         'stats_roles_browse_fields' => 'a:1:{i:0;s:5:"admin";}',
+        'stats_roles_browse_collections' => 'a:1:{i:0;s:5:"admin";}',
         // Display.
         'stats_default_user_status_admin' => 'hits',
         'stats_default_user_status_public' => 'hits_anonymous',
@@ -234,6 +235,7 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                         'stats_roles_browse_records',
                         'stats_roles_browse_downloads',
                         'stats_roles_browse_fields',
+                        'stats_roles_browse_collections',
                         'stats_display_by_hooks',
                     ))) {
                    $post[$optionKey] = serialize($post[$optionKey]) ?: serialize(array());
@@ -280,6 +282,11 @@ class StatsPlugin extends Omeka_Plugin_AbstractPlugin
                     'public' => 'stats_public_allow_browse_fields',
                     'roles' => 'stats_roles_browse_fields',
                     'privileges' => 'by-field',
+                ),
+                'browse_collections' => array(
+                    'public' => 'stats_public_allow_browse_collections',
+                    'roles' => 'stats_roles_browse_collections',
+                    'privileges' => 'by-collection',
                 ),
             ),
         );

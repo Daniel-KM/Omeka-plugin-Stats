@@ -41,6 +41,14 @@
             'module' => 'stats',
         );
     }
+    if (is_allowed('Stats_Browse', 'by-collection')) {
+        $navArray[] = array(
+            'label' => __('By Collection'),
+            'action' => 'by-collection',
+            'controller' => 'browse',
+            'module' => 'stats',
+        );
+    }
     echo nav($navArray, 'admin_navigation_settings');
 ?>
 </nav>

@@ -38,6 +38,11 @@
                             'public' => 'stats_public_allow_browse_fields',
                             'roles' => 'stats_roles_browse_fields',
                         ),
+                        'browse_collections' => array(
+                            'label' => __('Browse by Collection'),
+                            'public' => 'stats_public_allow_browse_collections',
+                            'roles' => 'stats_roles_browse_collections',
+                        ),
                     );
                     $userRoles = get_user_roles();
                     unset($userRoles['super']);
