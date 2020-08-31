@@ -156,6 +156,81 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
         ));
     }
 
+    public function byCollectionAction()
+    {
+        $db = get_db();
+
+        $select = new Omeka_Db_Select();
+        $select->from(['stats' => $db->Stat]);
+        $select->joinInner(['items' => $db->Item], 'items.id = stats.record_id AND stats.record_type = "Item"');
+        $select->reset(Zend_Db_Select::COLUMNS);
+        $select->columns(['items.collection_id', 'SUM(stats.hits) AS hits']);
+        $select->group('items.collection_id');
+        $select->where('stats.type = "record"');
+        $select->where('stats.record_type = "Item"');
+        $select->order('hits');
+        $hitsPerCollection = $db->fetchPairs($select);
+
+        $results = [];
+        if (plugin_is_active('CollectionTree')) {
+            $collections = $db->getTable('Collection')->findAll();
+            foreach ($collections as $collection) {
+                $hitsInclusive = $this->_getHitsPerCollection($hitsPerCollection, $collection->id);
+                if ($hitsInclusive > 0) {
+                    $results[] = [
+                        'collection' => metadata($collection, ['Dublin Core', 'Title']),
+                        'hits' => isset($hitsPerCollection[$collection->id]) ? $hitsPerCollection[$collection->id] : 0,
+                        'hitsInclusive' => $hitsInclusive,
+                    ];
+                }
+            }
+        } else {
+            foreach ($hitsPerCollection as $collectionId => $hits) {
+                $collection = $db->getTable('Collection')->findById($collectionId);
+                $results[] = [
+                    'collection' => metadata($collection, ['Dublin Core', 'Title']),
+                    'hits' => $hits,
+                ];
+            }
+        }
+
+        $sortField = $this->getParam('sort_field');
+        if (empty($sortField) || !in_array($sortField, array('collection', 'hits', 'hitsInclusive'))) {
+            $sortField = 'hitsInclusive';
+            $this->setParam('sort_field', $sortField);
+        }
+        $sortDir = $this->getParam('sort_dir');
+        if (empty($sortDir)) {
+            $sortDir = 'd';
+            $this->setParam('sort_dir', $sortDir);
+        }
+
+        usort($results, function ($a, $b) use ($sortField, $sortDir) {
+            $cmp = strnatcasecmp($a[$sortField], $b[$sortField]);
+            if ($sortDir === 'd') {
+                $cmp = -$cmp;
+            }
+            return $cmp;
+        });
+
+        $this->view->assign(array(
+            'hits' => $results,
+            'total_results' => count($results),
+            'stats_type' => 'collection',
+        ));
+    }
+
+    protected function _getHitsPerCollection($hitsPerCollection, $collectionId)
+    {
+        $childrenHits = 0;
+        $childCollections = get_db()->getTable('CollectionTree')->getChildCollections($collectionId);
+        foreach ($childCollections as $childCollection) {
+            $childrenHits += $this->_getHitsPerCollection($hitsPerCollection, $childCollection['id']);
+        }
+
+        return (isset($hitsPerCollection[$collectionId]) ? $hitsPerCollection[$collectionId] : 0) + $childrenHits;
+    }
+
     /**
      * Retrieve and render a set of rows for the controller's model.
      *
