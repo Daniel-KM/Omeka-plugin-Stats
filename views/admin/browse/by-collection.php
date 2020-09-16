@@ -13,6 +13,38 @@ echo common('stats-nav');
     <p>
         <strong><?php echo __('By Collection'); ?></strong>
     </p>
+
+<form method="get">
+    <select name="year">
+        <option value=""><?php echo __('All years'); ?></option>
+        <?php foreach ($years as $year): ?>
+            <option value="<?php echo $year; ?>" <?php if ($yearFilter == $year): ?>selected<?php endif; ?>><?php echo $year; ?></option>
+        <?php endforeach; ?>
+    </select>
+
+    <?php $months = array(
+        __('January'),
+        __('February'),
+        __('March'),
+        __('April'),
+        __('May'),
+        __('June'),
+        __('July'),
+        __('August'),
+        __('September'),
+        __('October'),
+        __('November'),
+        __('December'),
+    ); ?>
+    <select name="month">
+        <option value=""><?php echo __('All months'); ?></option>
+        <?php foreach ($months as $i => $month): ?>
+            <option value="<?php echo $i + 1; ?>"<?php if ($monthFilter == $i + 1): ?>selected<?php endif; ?>><?php echo $month ?></option>
+        <?php endforeach; ?>
+    </select>
+    <button type="submit"><?php echo __('Filter'); ?></button>
+</form>
+
 <?php if ($total_results): ?>
     <table class="stats-table">
     <thead>

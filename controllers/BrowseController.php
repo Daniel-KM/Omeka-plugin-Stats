@@ -160,15 +160,23 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
     {
         $db = get_db();
 
+        $year = $this->getParam('year');
+        $month = $this->getParam('month');
+
         $select = new Omeka_Db_Select();
-        $select->from(['stats' => $db->Stat]);
-        $select->joinInner(['items' => $db->Item], 'items.id = stats.record_id AND stats.record_type = "Item"');
+        $select->from(['hits' => $db->Hit]);
+        $select->joinInner(['items' => $db->Item], 'items.id = hits.record_id');
         $select->reset(Zend_Db_Select::COLUMNS);
-        $select->columns(['items.collection_id', 'SUM(stats.hits) AS hits']);
+        $select->columns(['items.collection_id', 'COUNT(hits.id) AS total_hits']);
         $select->group('items.collection_id');
-        $select->where('stats.type = "record"');
-        $select->where('stats.record_type = "Item"');
-        $select->order('hits');
+        $select->where('hits.record_type = "Item"');
+        if ($year) {
+            $select->where('YEAR(hits.added) = ?', $year);
+        }
+        if ($month) {
+            $select->where('MONTH(hits.added) = ?', $month);
+        }
+        $select->order('total_hits');
         $hitsPerCollection = $db->fetchPairs($select);
 
         $results = [];
@@ -213,10 +221,21 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
             return $cmp;
         });
 
+        $select = new Omeka_Db_Select();
+        $select->from(['hits' => $db->Hit]);
+        $select->reset(Zend_Db_Select::COLUMNS);
+        $select->distinct();
+        $select->columns(['YEAR(hits.added) AS year']);
+        $select->order('year desc');
+        $years = $db->fetchCol($select);
+
         $this->view->assign(array(
             'hits' => $results,
             'total_results' => count($results),
             'stats_type' => 'collection',
+            'years' => $years,
+            'yearFilter' => $year,
+            'monthFilter' => $month,
         ));
     }
 
