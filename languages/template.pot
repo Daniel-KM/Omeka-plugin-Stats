@@ -205,28 +205,88 @@ msgstr ""
 msgid "By Collection"
 msgstr ""
 
-#: views/admin/browse/by-collection.php:22 views/admin/browse/by-field.php:26
+#: views/admin/browse/by-collection.php:19
+msgid "All years"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:26
+msgid "January"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:27
+msgid "February"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:28
+msgid "March"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:29
+msgid "April"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:30
+msgid "May"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:31
+msgid "June"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:32
+msgid "July"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:33
+msgid "August"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:34
+msgid "September"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:35
+msgid "October"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:36
+msgid "November"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:37
+msgid "December"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:40
+msgid "All months"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:45
+msgid "Filter"
+msgstr ""
+
+#: views/admin/browse/by-collection.php:54 views/admin/browse/by-field.php:26
 #: views/admin/browse/by-stat.php:22 views/public/browse/by-field.php:27
 #: views/public/browse/by-stat.php:23
 msgid "Hits"
 msgstr ""
 
-#: views/admin/browse/by-collection.php:24
+#: views/admin/browse/by-collection.php:56
 msgid "Hits (including sub-collections)"
 msgstr ""
 
-#: views/admin/browse/by-collection.php:45 views/admin/browse/by-field.php:47
+#: views/admin/browse/by-collection.php:77 views/admin/browse/by-field.php:47
 #: views/public/browse/by-field.php:48
 msgid "There is no hit yet."
 msgstr ""
 
-#: views/admin/browse/by-collection.php:47 views/admin/browse/by-field.php:49
+#: views/admin/browse/by-collection.php:79 views/admin/browse/by-field.php:49
 #: views/public/browse/by-field.php:50
 #, php-format
 msgid "The query searched %s hits and returned no results."
 msgstr ""
 
-#: views/admin/browse/by-collection.php:48 views/admin/browse/by-field.php:50
+#: views/admin/browse/by-collection.php:80 views/admin/browse/by-field.php:50
 #: views/admin/browse/by-stat.php:76 views/public/browse/by-field.php:51
 #: views/public/browse/by-stat.php:69
 msgid "See all stats."
