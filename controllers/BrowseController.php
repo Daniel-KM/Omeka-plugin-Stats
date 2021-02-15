@@ -163,21 +163,20 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
         $year = $this->getParam('year');
         $month = $this->getParam('month');
 
-        $select = new Omeka_Db_Select();
-        $select->from(['hits' => $db->Hit]);
-        $select->joinInner(['items' => $db->Item], 'items.id = hits.record_id');
-        $select->reset(Zend_Db_Select::COLUMNS);
-        $select->columns(['items.collection_id', 'COUNT(hits.id) AS total_hits']);
-        $select->group('items.collection_id');
-        $select->where('hits.record_type = "Item"');
+        $sql = "SELECT items.collection_id, COUNT(hits.id) AS total_hits FROM {$db->Hit} hits";
+        if ($year || $month) {
+            $sql .= ' FORCE INDEX FOR JOIN (added)';
+        }
+        $sql .= " JOIN {$db->Item} items ON (hits.record_id = items.id)";
+        $sql .= ' WHERE hits.record_type = "Item"';
         if ($year) {
-            $select->where('YEAR(hits.added) = ?', $year);
+            $sql .= ' AND YEAR(hits.added) = ' . $db->quote($year, Zend_Db::INT_TYPE);
         }
         if ($month) {
-            $select->where('MONTH(hits.added) = ?', $month);
+            $sql .= ' AND MONTH(hits.added) = ' . $db->quote($month, Zend_Db::INT_TYPE);
         }
-        $select->order('total_hits');
-        $hitsPerCollection = $db->fetchPairs($select);
+        $sql .= ' GROUP BY items.collection_id ORDER BY total_hits';
+        $hitsPerCollection = $db->fetchPairs($sql);
 
         $results = [];
         if (plugin_is_active('CollectionTree')) {
