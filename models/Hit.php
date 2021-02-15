@@ -132,7 +132,7 @@ class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Inter
         // For dev purpose.
         // print "<!-- UA : ".$this->user_agent." -->";
         $crawlers = 'bot|crawler|slurp|spider|check_http';
-        return (bool) preg_match("~$crawlers~", $this->user_agent);
+        return (bool) preg_match("~$crawlers~", (string) $this->user_agent);
     }
 
 
