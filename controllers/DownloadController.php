@@ -86,9 +86,10 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
         $response->setHeader('Cache-Control', 'private, max-age=2592000, post-check=2592000, pre-check=2592000', true);
         $response->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT', true);
 
-        // To avoid issue with big files, send headers separately.
-        // $file = file_get_contents($filepath);
-        // $response->setBody($file);
+        // To avoid big file issues, clear buffers and send headers separately.
+        while (ob_get_level()) {
+	    ob_end_clean();
+        }
         $response->sendHeaders();
         readfile($filepath);
         return true;
