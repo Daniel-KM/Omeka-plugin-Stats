@@ -14,6 +14,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
     protected $_filepath;
     protected $_filesize;
     protected $_file;
+    protected $_contentType;
     protected $_mode;
     protected $_theme;
 
@@ -71,19 +72,26 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
         // Everything has been checked.
         $filepath = $this->_getFilepath();
         $filesize = $this->_getFilesize();
-        $file = $this->_getFile();
+        // Required to prepare file.
+        $this->_getFile();
         $contentType = $this->_getContentType();
         $mode = $this->_getMode();
 
-        $this->getResponse()->clearBody();
-        $this->getResponse()->setHeader('Content-Disposition', $mode . '; filename="' . pathinfo($filepath, PATHINFO_BASENAME) . '"', true);
-        $this->getResponse()->setHeader('Content-Type', $contentType);
-        $this->getResponse()->setHeader('Content-Length', $filesize);
+        $response = $this->getResponse();
+        $response->clearBody();
+        $response->setHeader('Content-Disposition', $mode . '; filename="' . pathinfo($filepath, PATHINFO_BASENAME) . '"', true);
+        $response->setHeader('Content-Type', $contentType);
+        $response->setHeader('Content-Length', $filesize);
         // Cache for 30 days.
-        $this->getResponse()->setHeader('Cache-Control', 'private, max-age=2592000, post-check=2592000, pre-check=2592000', true);
-        $this->getResponse()->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT', true);
-        $file = file_get_contents($filepath);
-        $this->getResponse()->setBody($file);
+        $response->setHeader('Cache-Control', 'private, max-age=2592000, post-check=2592000, pre-check=2592000', true);
+        $response->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT', true);
+
+        // To avoid issue with big files, send headers separately.
+        // $file = file_get_contents($filepath);
+        // $response->setBody($file);
+        $response->sendHeaders();
+        readfile($filepath);
+        return true;
     }
 
     /**
@@ -274,7 +282,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
                 $this->_contentType = $file->mime_type;
             }
             else {
-               $this->_contentType = 'image/jpeg';
+                $this->_contentType = 'image/jpeg';
             }
         }
 
