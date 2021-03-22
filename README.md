@@ -199,7 +199,7 @@ Current maintainers:
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2014-2015
+* Copyright Daniel Berthereau, 2014-2021
 
 
 [Omeka]: https://omeka.org
