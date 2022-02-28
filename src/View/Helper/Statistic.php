@@ -3,10 +3,10 @@
 namespace Statistics\View\Helper;
 
 use Laminas\View\Helper\AbstractHelper;
+use Omeka\Api\Representation\AbstractResourceRepresentation;
 use Statistics\Api\Adapter\HitAdapter;
 use Statistics\Api\Adapter\StatAdapter;
 use Statistics\Entity\Stat;
-use Omeka\Api\Representation\AbstractResourceRepresentation;
 
 /**
  * Helper to get some public stats.
@@ -130,7 +130,7 @@ class Statistic extends AbstractHelper
     /**
      * Get the count of hits of a resource or sub-resource.
      *
-     * @param Resource|string|integer $value If string or numeric, url or id of the
+     * @param Resource|string|int $value If string or numeric, url or id of the
      * downloaded  file. If Item, returns total of dowloaded files of this Item.
      * If Collection, returns total of downloaded files of all items. If File,
      * returns total of downloads of this file.
@@ -177,7 +177,7 @@ class Statistic extends AbstractHelper
      *
      * @todo Position of user is currently unavailable.
      *
-     * @param Resource|string|integer $value If string or numeric, url or id of the
+     * @param Resource|string|int $value If string or numeric, url or id of the
      * downloaded  file. If Item, returns position of dowloaded files of this
      * Item. If Collection, returns position of downloaded files of all items.
      * If File, returns position of downloads of this file.
@@ -192,13 +192,13 @@ class Statistic extends AbstractHelper
     /**
      * Get viewed pages.
      *
-     *@param null|boolean $hasResource Null for all pages, boolean to set with or
+     * @param null|bool $hasResource Null for all pages, boolean to set with or
      * without resource.
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Offfset to set page to retrieve.
-     * @param boolean $asHtml Return html (true, default) or array of Stats.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Offfset to set page to retrieve.
+     * @param bool $asHtml Return html (true, default) or array of Stats.
      * @return string|array Return html of array of Stats.
      */
     public function viewedPages(?bool $hasResource = null, ?string $sort = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null, bool $asHtml = true)
@@ -220,9 +220,9 @@ class Statistic extends AbstractHelper
      * Can be empty, "all", "none", "page" or "download" too.
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Offfset to set page to retrieve.
-     * @param boolean $asHtml Return html (true, default) or array of Stats.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Offfset to set page to retrieve.
+     * @param bool $asHtml Return html (true, default) or array of Stats.
      * @return string|array Return html of array of Stats.
      */
     public function viewedResources($resourceType, ?string $sort = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null, bool $asHtml = true)
@@ -253,9 +253,9 @@ class Statistic extends AbstractHelper
      *
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Offfset to set page to retrieve.
-     * @param boolean $asHtml Return html (true, default) or array of Stats.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Offfset to set page to retrieve.
+     * @param bool $asHtml Return html (true, default) or array of Stats.
      * @return string|array Return html of array of Stats.
      */
     public function viewedDownloads(?string $sort = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null, bool $asHtml = true)
@@ -281,7 +281,6 @@ class Statistic extends AbstractHelper
      */
     protected function viewedHtml($stats, $type, $sort, $userStatus): string
     {
-
         if (empty($stats)) {
             return '<div class="stats">' . $this->view->translate('None.') . '</div>';
         }
@@ -403,7 +402,7 @@ class Statistic extends AbstractHelper
      */
     public function textPage(?string $url = null, ?string $userStatus = null): string
     {
-       if (empty($url)) {
+        if (empty($url)) {
             $url = $this->currentUrl();
         }
         $userStatus = $this->normalizeUserStatus($userStatus);
@@ -441,18 +440,19 @@ class Statistic extends AbstractHelper
     /**
      * Get the stat view for the selected download.
      *
-     * @param string|integer $downloadId Url or id of the downloaded file.
+     * @param string|int $downloadId Url or id of the downloaded file.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return string Html code from the theme.
      */
     public function textDownload($downloadId, ?string $userStatus = null): string
     {
         $userStatus = $this->normalizeUserStatus($userStatus);
-        $stat = $this->view->api()->searchOne('stats',
+        $stat = $this->view->api()->searchOne(
+            'stats',
             is_numeric($downloadId)
                 ? ['entity_name' => 'media', 'entity_id' => $downloadId, 'type' => Stat::TYPE_DOWNLOAD]
                 : ['url' => $downloadId, 'type' => Stat::TYPE_DOWNLOAD]
-            )->getContent();
+        )->getContent();
         return $this->view->partial('common/statistics-value', [
             'type' => Stat::TYPE_DOWNLOAD,
             'stat' => $stat,
@@ -526,7 +526,7 @@ class Statistic extends AbstractHelper
     {
         $translate = $this->view->plugin('translate');
         $userStatus = $this->normalizeUserStatus();
-        switch($userStatus) {
+        switch ($userStatus) {
             case 'anonymous':
                 return $translate('anonymous users');
             case 'identified':
@@ -562,13 +562,13 @@ class Statistic extends AbstractHelper
     /**
      * Check if url is a page one or a download one.
      */
-     public function isDownload(string $url): bool
-     {
+    public function isDownload(string $url): bool
+    {
         return (strpos($url, '/files/original/') === 0)
             || (strpos($url, '/files/large/') === 0)
             // For migration from Omeka Classic.
             || (strpos($url, '/files/fullsize/') === 0);
-     }
+    }
 
     /**
      * Helper to get params from a resource. If no resource, return empty resource.

@@ -13,8 +13,8 @@ use Laminas\EventManager\Event;
 use Laminas\EventManager\SharedEventManagerInterface;
 use Laminas\Mvc\MvcEvent;
 use Laminas\View\Renderer\PhpRenderer;
-use Omeka\Api\Request;
 use Omeka\Api\Representation\AbstractResourceRepresentation;
+use Omeka\Api\Request;
 
 /**
  * Stats
@@ -184,14 +184,14 @@ class Module extends AbstractModule
         $adapter->create($request);
     }
 
-    public function displayPublic(Event $event)
+    public function displayPublic(Event $event): void
     {
         $view = $event->getTarget();
         $resource = $view->vars()->offsetGet('resource');
         echo $view->statistic()->textResource($resource);
     }
 
-    public function viewDetails(Event $event)
+    public function viewDetails(Event $event): void
     {
         $view = $event->getTarget();
         $representation = $event->getParam('entity');
@@ -215,16 +215,20 @@ HTML;
 
         $html = '<ul>';
         $html .= '<li>';
-        $html .= sprintf($translate('Views: %d (%d anonymous / %d identified users)'), // @translate
+        $html .= sprintf(
+            $translate('Views: %d (%d anonymous / %d identified users)'), // @translate
             $statistic->totalResource($resource),
             $statistic->totalResource($resource, 'anonymous'),
-            $statistic->totalResource($resource, 'identified'));
+            $statistic->totalResource($resource, 'identified')
+        );
         $html .= '</li>';
         $html .= '<li>';
-        $html .= sprintf($translate('Position: %d (%d anonymous / %d identified users)'), // @translate
+        $html .= sprintf(
+            $translate('Position: %d (%d anonymous / %d identified users)'), // @translate
             $statistic->positionResource($resource),
             $statistic->positionResource($resource, 'anonymous'),
-            $statistic->positionResource($resource, 'identified'));
+            $statistic->positionResource($resource, 'identified')
+        );
         $html .= '</li>';
         $html .= '</ul>';
         return $html;
@@ -298,7 +302,8 @@ HTML;
                 $html .= '<ol>';
                 foreach ($stats as $stat) {
                     $html .= '<li>';
-                    $html .= sprintf($translate('%s (%d views)'),
+                    $html .= sprintf(
+                        $translate('%s (%d views)'),
                         // $stat->getPositionPage(),
                         '<a href="' . $escapeAttr($stat->hitUrl()) . '">' . $escape($stat->hitUrl()) . '</a>',
                         $stat->totalHits($userStatus)

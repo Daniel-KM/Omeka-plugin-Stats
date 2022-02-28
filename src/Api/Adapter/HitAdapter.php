@@ -11,11 +11,8 @@ use Omeka\Entity\EntityInterface;
 use Omeka\Entity\User;
 use Omeka\Stdlib\ErrorStore;
 use Statistics\Api\Representation\HitRepresentation;
-use Statistics\Api\Representation\StatRepresentation;
 use Statistics\Entity\Hit;
 use Statistics\Entity\Stat;
-use Omeka\Api\Representation\AbstractRepresentation;
-use Omeka\Entity\AbstractEntity;
 
 /**
  * The Hit table.
@@ -83,7 +80,7 @@ class HitAdapter extends AbstractEntityAdapter
                 $qb->andWhere($expr->in(
                     'omeka_root.entityName',
                     $this->createNamedParameter($qb, $query['entity_name'])
-                    ));
+                ));
             } else {
                 $qb->andWhere($expr->eq(
                     'omeka_root.entityName',
@@ -519,8 +516,8 @@ class HitAdapter extends AbstractEntityAdapter
             'entity_name' => 'o:entity_name',
             'user_id' => 'o:user_id',
             'ip' => 'o:ip',
-            'referrer' => 'o:referrer',
             'query' => 'o:query',
+            'referrer' => 'o:referrer',
             'user_agent' => 'o:user_agent',
             'accept_language' => 'o:accept_language',
             'created' => 'o:created',
@@ -556,11 +553,11 @@ class HitAdapter extends AbstractEntityAdapter
                     case 'o:ip':
                         $value = $this->privacyIp();
                         break;
-                    case 'o:referrer':
-                        $value = $currentRequest['referrer'];
-                        break;
                     case 'o:query':
                         $value = $currentRequest['query'];
+                        break;
+                    case 'o:referrer':
+                        $value = $currentRequest['referrer'];
                         break;
                     case 'o:user_agent':
                         $value = $currentRequest['user_agent'];

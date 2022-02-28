@@ -2,9 +2,9 @@
 
 namespace Statistics\Service\ViewHelper;
 
-use Statistics\View\Helper\Statistic;
 use Interop\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
+use Statistics\View\Helper\Statistic;
 
 class StatisticFactory implements FactoryInterface
 {

@@ -5,7 +5,6 @@ namespace Statistics\Api\Representation;
 use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Representation\AbstractEntityRepresentation;
 use Omeka\Api\Representation\AbstractResourceRepresentation;
-use Omeka\Api\Request;
 use Statistics\Entity\Stat;
 
 /**
@@ -135,8 +134,6 @@ class StatRepresentation extends AbstractEntityRepresentation
         return $this->resource->getTotalHitsIdentified();
     }
 
-
-
     /**
      * The date this resource was added (first hit).
      */
@@ -156,7 +153,7 @@ class StatRepresentation extends AbstractEntityRepresentation
     /**
      * Determine whether or not the page has or had a resource.
      *
-     * @return boolean True if hit has a resource, even deleted.
+     * @return bool True if hit has a resource, even deleted.
      */
     public function hasResource()
     {
@@ -211,7 +208,7 @@ class StatRepresentation extends AbstractEntityRepresentation
      *
      * @param string $userStatus Can be hits (default), anonymous or identified.
      *
-     * @return integer|null
+     * @return int|null
      */
     public function totalResource(?string $userStatus = null): int
     {
@@ -296,7 +293,7 @@ class StatRepresentation extends AbstractEntityRepresentation
                 return $this->positionDownload($userStatus);
             case STAT::TYPE_PAGE:
             // Unlike omeka classic, the position is the page when type is unknown.
-            default;
+            default:
                 return $this->positionPage($userStatus);
         }
     }
@@ -346,9 +343,9 @@ class StatRepresentation extends AbstractEntityRepresentation
      *
      * @param string $default Return this string if empty, or default if set.
      */
-     public function getHumanResourceType(?string $default = null): string
-     {
-         $types = [
+    public function getHumanResourceType(?string $default = null): string
+    {
+        $types = [
              'items' => 'item',
              'item_sets' => 'item set',
              'media' => 'media',
@@ -356,7 +353,7 @@ class StatRepresentation extends AbstractEntityRepresentation
              'annotation' => 'annotation',
              'pages' => 'page',
          ];
-         $entityName = $this->resource->getEntityName();
-         return $types[$entityName] ?? $default ?? $entityName;
-     }
+        $entityName = $this->resource->getEntityName();
+        return $types[$entityName] ?? $default ?? $entityName;
+    }
 }

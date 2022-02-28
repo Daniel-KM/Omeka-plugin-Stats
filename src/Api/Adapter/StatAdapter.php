@@ -2,21 +2,14 @@
 
 namespace Statistics\Api\Adapter;
 
-use DateTime;
 use Doctrine\ORM\QueryBuilder;
 use Omeka\Api\Adapter\AbstractEntityAdapter;
+use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Request;
 use Omeka\Entity\EntityInterface;
 use Omeka\Stdlib\ErrorStore;
-use Statistics\Api\Representation\HitRepresentation;
 use Statistics\Api\Representation\StatRepresentation;
 use Statistics\Entity\Stat;
-use Omeka\Api\Representation\AbstractRepresentation;
-use Omeka\Entity\AbstractEntity;
-use Omeka\Stdlib\Message;
-use Omeka\Api\Exception\NotFoundException;
-use Omeka\Api\Representation\AbstractResourceRepresentation;
-use Omeka\Api\Representation\ItemRepresentation;
 
 /**
  * The Stat table.
@@ -220,7 +213,7 @@ class StatAdapter extends AbstractEntityAdapter
         parent::sortQuery($qb, $query);
     }
 
-    public function validateRequest(Request $request, ErrorStore $errorStore)
+    public function validateRequest(Request $request, ErrorStore $errorStore): void
     {
         $data = $request->getContent();
         if (empty($data['o:url']) && empty($data['url'])) {
@@ -284,7 +277,7 @@ class StatAdapter extends AbstractEntityAdapter
         $this->updateTimestamps($request, $entity);
     }
 
-    public function validateEntity(EntityInterface $entity, ErrorStore $errorStore)
+    public function validateEntity(EntityInterface $entity, ErrorStore $errorStore): void
     {
         $type = $entity->getType();
         $url = $entity->getUrl();
@@ -688,7 +681,7 @@ class StatAdapter extends AbstractEntityAdapter
             'has_resource' => $hasResource,
             'not_zero' => $column,
             'sort_by' => 'modified',
-            'sort_order'=> 'asc',
+            'sort_order' => 'asc',
         ];
         return $this->vieweds($criteria, $limit, $page);
     }
@@ -715,7 +708,7 @@ class StatAdapter extends AbstractEntityAdapter
             'entity_name' => $entityNames,
             'not_zero' => $column,
             'sort_by' => 'modified',
-            'sort_order'=> 'asc',
+            'sort_order' => 'asc',
         ];
         return $this->vieweds($criteria, $limit, $page);
     }
@@ -739,7 +732,7 @@ class StatAdapter extends AbstractEntityAdapter
             'type' => Stat::TYPE_DOWNLOAD,
             'not_zero' => $column,
             'sort_by' => 'modified',
-            'sort_order'=> 'asc',
+            'sort_order' => 'asc',
         ];
         return $this->vieweds($criteria, $limit, $page);
     }
