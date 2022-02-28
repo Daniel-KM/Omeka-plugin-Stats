@@ -2,6 +2,7 @@
 
 namespace Statistics\Controller;
 
+use Doctrine\DBAL\Connection;
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\View\Model\ViewModel;
 use Statistics\Entity\Stat;
@@ -12,7 +13,17 @@ use Statistics\Entity\Stat;
 class BrowseController extends AbstractActionController
 {
     /**
-     * Forward to the 'browse by page' action
+     * @var \Doctrine\DBAL\Connection
+     */
+    protected $connection;
+
+    public function __construct(Connection $connection)
+    {
+        $this->connection = $connection;
+    }
+
+    /**
+     * Forward to the summary controller.
      */
     public function indexAction()
     {
@@ -20,13 +31,14 @@ class BrowseController extends AbstractActionController
     }
 
     /**
-     * Forward to the 'by-page' action
+     * Redirect to the 'by-page' action.
      */
     public function browseAction()
     {
-        $view = $this->byPageAction();
-        return $view
-            ->setTemplate('statistics/admin/browse/by-stat');
+        $query = $this->params()->fromRoute();
+        $query['action'] = 'by-page';
+        $isSiteRequest = $this->status()->isSiteRequest();
+        return $this->redirect()->toRoute($isSiteRequest ? 'site/statistics/default' : 'admin/statistics/default', $query);
     }
 
     /**
@@ -34,12 +46,17 @@ class BrowseController extends AbstractActionController
      */
     public function byPageAction()
     {
+        $isSiteRequest = $this->status()->isSiteRequest();
         $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
         $userStatus = $this->settings()->get('statistics_default_user_status_admin');
         $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
         $this->setBrowseDefaults($userStatusBrowse);
 
-        $response = $this->api()->search('stats', ['type' => Stat::TYPE_PAGE, 'user_status' => $userStatus]);
+        $query = $this->params()->fromQuery();
+        $query['type'] = Stat::TYPE_PAGE;
+        $query['user_status'] = $userStatus;
+
+        $response = $this->api()->search('stats', $query);
         $this->paginator($response->getTotalResults());
         $stats = $response->getContent();
 
@@ -50,7 +67,7 @@ class BrowseController extends AbstractActionController
             'type' => Stat::TYPE_PAGE,
         ]);
         return $view
-            ->setTemplate('statistics/admin/browse/by-stat');
+            ->setTemplate($isSiteRequest ? 'statistics/site/browse/by-stat' : 'statistics/admin/browse/by-stat');
     }
 
     /**
@@ -58,12 +75,17 @@ class BrowseController extends AbstractActionController
      */
     public function byResourceAction()
     {
+        $isSiteRequest = $this->status()->isSiteRequest();
         $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
         $userStatus = $this->settings()->get('statistics_default_user_status_admin');
         $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
         $this->setBrowseDefaults($userStatusBrowse);
 
-        $response = $this->api()->search('stats', ['type' => Stat::TYPE_RESOURCE, 'user_status' => $userStatus]);
+        $query = $this->params()->fromQuery();
+        $query['type'] = Stat::TYPE_RESOURCE;
+        $query['user_status'] = $userStatus;
+
+        $response = $this->api()->search('stats', $query);
         $this->paginator($response->getTotalResults());
         $stats = $response->getContent();
 
@@ -74,7 +96,7 @@ class BrowseController extends AbstractActionController
             'type' => Stat::TYPE_RESOURCE,
         ]);
         return $view
-            ->setTemplate('statistics/admin/browse/by-stat');
+            ->setTemplate($isSiteRequest ? 'statistics/site/browse/by-stat' : 'statistics/admin/browse/by-stat');
     }
 
     /**
@@ -82,12 +104,17 @@ class BrowseController extends AbstractActionController
      */
     public function byDownloadAction()
     {
+        $isSiteRequest = $this->status()->isSiteRequest();
         $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
         $userStatus = $this->settings()->get('statistics_default_user_status_admin');
         $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
         $this->setBrowseDefaults($userStatusBrowse);
 
-        $response = $this->api()->search('stats', ['type' => Stat::TYPE_DOWNLOAD, 'user_status' => $userStatus]);
+        $query = $this->params()->fromQuery();
+        $query['type'] = Stat::TYPE_DOWNLOAD;
+        $query['user_status'] = $userStatus;
+
+        $response = $this->api()->search('stats', $query);
         $this->paginator($response->getTotalResults());
         $stats = $response->getContent();
 
@@ -98,7 +125,7 @@ class BrowseController extends AbstractActionController
             'type' => Stat::TYPE_DOWNLOAD,
         ]);
         return $view
-            ->setTemplate('statistics/admin/browse/by-stat');
+            ->setTemplate($isSiteRequest ? 'statistics/site/browse/by-stat' : 'statistics/admin/browse/by-stat');
     }
 
     /**
@@ -106,34 +133,40 @@ class BrowseController extends AbstractActionController
      */
     public function byFieldAction()
     {
-        $userStatus = $this->settings()->get('statistics_default_user_status_admin');
+        $settings = $this->settings();
+        $isSiteRequest = $this->status()->isSiteRequest();
+        $userStatus = $isSiteRequest
+            ? $settings->get('statistics_default_user_status_public')
+            : $settings->get('statistics_default_user_status_admin');
 
-        $params = $this->params()->fromQuery();
+        $query = $this->params()->fromQuery();
 
-        $field = $params['field'] ?? null;
+        $field = $query['field'] ?? null;
         if (empty($field) || !in_array($field, ['referrer', 'query', 'user_agent', 'accept_language'])) {
             $field = 'referrer';
-            $params['field'] = $field;
+            $query['field'] = $field;
         }
 
-        $sortBy = $params['sort_by'] ?? null;
+        $sortBy = $query['sort_by'] ?? null;
         if (empty($sortBy) || !in_array($sortBy, [$field, 'hits'])) {
-            $sortBy = 'hits';
-            $params['sort_by'] = 'hits';
+            $query['sort_by'] = 'hits';
         }
-        $sortOrder = $params['sort_order'] ?? null;
-        if (empty($sortOrder) || !in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-            $params['sort_order'] = 'desc';
+        $sortOrder = $query['sort_order'] ?? null;
+        if (empty($sortOrder) || !in_array(strtolower($sortOrder), ['asc', 'desc'])) {
+            $query['sort_order'] = 'desc';
         }
+
+        $currentPage = isset($query['page']) ? (int) $query['page'] : null;
+        $resourcesPerPage = $isSiteRequest ? (int) $this->siteSettings()->get('pagination_per_page', 25) : (int) $this->settings()->get('pagination_per_page', 25);
 
         // Don't use api, because this is a synthesis, not a list of resources.
-        $this->browseActionByField($params);
-
+        /** @var \Statistics\View\Helper\Statistic $statistic */
+        $statistic = $this->viewHelpers()->get('statistic');
+        $results = $statistic->frequents($query, $resourcesPerPage, $currentPage);
+        $totalResults = $statistic->countFrequents($query);
         $totalHits = $this->api()->search('hits', ['user_status' => $userStatus])->getTotalResults();
-
-        // TODO There is a special filter for field "referrer": "NOT LIKE ?", WEB_ROOT . '/%'."
         $totalNotEmpty = $this->api()->search('hits', ['field' => $field, 'user_status' => $userStatus, 'not_empty' => $field])->getTotalResults();
+        $this->paginator($totalResults);
 
         switch ($field) {
             default:
@@ -155,141 +188,123 @@ class BrowseController extends AbstractActionController
             'type' => 'field',
             'field' => $field,
             'labelField' => $labelField,
+            'results' => $results,
             'totalHits' => $totalHits,
             'totalNotEmpty' => $totalNotEmpty,
             'userStatus' => $userStatus,
         ]);
         return $view
-            ->setTemplate('statistics/admin/browse/by-field');
+            ->setTemplate($isSiteRequest ? 'statistics/site/browse/by-field' : 'statistics/admin/browse/by-field');
     }
 
-    public function byItemSetAction(): void
+    public function byItemSetAction()
     {
-        $db = get_db();
+        // FIXME Stats by item set has not been checked a lot.
 
-        $year = $this->getParam('year');
-        $month = $this->getParam('month');
+        $isSiteRequest = $this->status()->isSiteRequest();
+        $query = $this->params()->fromQuery();
+        $year = $query['year'] ?? null;
+        $month = $query['month'] ?? null;
 
-        $sql = "SELECT items.collection_id, COUNT(hits.id) AS total_hits FROM {$db->Hit} hits";
+        $bind = [];
+        $types = [];
+        $force = $whereYear = $whereMonth = '';
         if ($year || $month) {
-            $sql .= ' FORCE INDEX FOR JOIN (added)';
+            // This is the doctrince hashed name index for the column "created".
+            $force = 'FORCE INDEX FOR JOIN (`IDX_5AD22641B23DB7B8`)';
+            if ($year) {
+                $whereYear = "\nAND YEAR(hit.created) = :year";
+                $bind['year'] = $year;
+                $types['year'] = \Doctrine\DBAL\ParameterType::INTEGER;
+            }
+            if ($month) {
+                $whereMonth = "\nAND MONTH(hit.created) = :month";
+                $bind['month'] = $month;
+                $types['month'] = \Doctrine\DBAL\ParameterType::INTEGER;
+            }
         }
-        $sql .= " JOIN {$db->Item} items ON (hits.resource_id = items.id)";
-        $sql .= ' WHERE hits.resource_type = "Item"';
-        if ($year) {
-            $sql .= ' AND YEAR(hits.added) = ' . $db->quote($year, Zend_Db::INT_TYPE);
-        }
-        if ($month) {
-            $sql .= ' AND MONTH(hits.added) = ' . $db->quote($month, Zend_Db::INT_TYPE);
-        }
-        $sql .= ' GROUP BY items.collection_id ORDER BY total_hits';
-        $hitsPerCollection = $db->fetchPairs($sql);
 
+        $sql = <<<SQL
+SELECT item_item_set.item_set_id, COUNT(hit.id) AS total_hits
+FROM hit hit $force
+JOIN item_item_set ON hit.entity_id = item_item_set.item_id
+WHERE hit.entity_name = "items"$whereYear$whereMonth
+GROUP BY item_item_set.item_set_id
+ORDER BY total_hits
+;
+SQL;
+        $hitsPerItemSet = $this->connection->executeQuery($sql, $bind, $types)->fetchAllKeyValue();
+
+        $api = $this->api();
         $results = [];
-        if (plugin_is_active('CollectionTree')) {
-            $collections = $db->getTable('Collection')->findAll();
-            foreach ($collections as $collection) {
-                $hitsInclusive = $this->_getHitsPerCollection($hitsPerCollection, $collection->id);
+        // TODO Check and integrate statistics for item set tree (with performance).
+        if (false && $this->plugins()->has('itemSetsTree')) {
+            $itemSetIds = $api->search('item_sets', [], ['returnScalar', 'id'])->getContent();
+            foreach ($itemSetIds as $itemSetId) {
+                $hitsInclusive = $this->getHitsPerItemSet($hitsPerItemSet, $itemSetId);
                 if ($hitsInclusive > 0) {
                     $results[] = [
-                        'collection' => metadata($collection, ['Dublin Core', 'Title']),
-                        'hits' => $hitsPerCollection[$collection->id] ?? 0,
+                        'item-set' => $api->read('item_sets', ['id' => $itemSetId])->getContent()->displayTitle(),
+                        'hits' => $hitsPerItemSet[$itemSetId] ?? 0,
                         'hitsInclusive' => $hitsInclusive,
                     ];
                 }
             }
         } else {
-            foreach ($hitsPerCollection as $collectionId => $hits) {
-                $collection = $db->getTable('Collection')->findById($collectionId);
+            foreach ($hitsPerItemSet as $itemSetId => $hits) {
                 $results[] = [
-                    'collection' => metadata($collection, ['Dublin Core', 'Title']),
+                    'item-set' => $api->read('item_sets', ['id' => $itemSetId])->getContent()->displayTitle(),
                     'hits' => $hits,
                 ];
             }
         }
 
-        $sortField = $this->getParam('sort_field');
-        if (empty($sortField) || !in_array($sortField, ['collection', 'hits', 'hitsInclusive'])) {
-            $sortField = 'hitsInclusive';
-            $this->setParam('sort_field', $sortField);
+        $this->paginator(count($results));
+
+        // TODO Manage special sort fields.
+        $sortBy = $query['sort_by'] ?? null;
+        if (empty($sortBy) || !in_array($sortBy, ['itemSet', 'hits', 'hitsInclusive'])) {
+            $sortBy = 'hitsInclusive';
         }
-        $sortDir = $this->getParam('sort_dir');
-        if (empty($sortDir)) {
-            $sortDir = 'd';
-            $this->setParam('sort_dir', $sortDir);
+        $sortOrder = $query['sort_order'] ?? null;
+        if (empty($sortOrder) || $sortOrder !== 'asc') {
+            $sortOrder = 'desc';
         }
 
-        usort($results, function ($a, $b) use ($sortField, $sortDir) {
-            $cmp = strnatcasecmp($a[$sortField], $b[$sortField]);
-            if ($sortDir === 'd') {
-                $cmp = -$cmp;
-            }
-            return $cmp;
+        usort($results, function ($a, $b) use ($sortBy, $sortOrder) {
+            $cmp = strnatcasecmp($a[$sortBy], $b[$sortBy]);
+            return $sortOrder === 'desc' ? -$cmp : $cmp;
         });
 
-        $select = new Omeka_Db_Select();
-        $select->from(['hits' => $db->Hit]);
-        $select->reset(Zend_Db_Select::COLUMNS);
-        $select->distinct();
-        $select->columns(['YEAR(hits.added) AS year']);
-        $select->order('year desc');
-        $years = $db->fetchCol($select);
+        // List of all available years.
+        $qb = $this->connection->createQueryBuilder();
+        $qb
+            ->select('DISTINCT YEAR(hit.created) AS year')
+            ->from('hit', 'hit')
+            ->orderBy('year', 'desc');
+        $years = $this->connection->executeQuery($qb)->fetchFirstColumn();
 
-        $this->view->assign([
-            'hits' => $results,
-            'total_results' => count($results),
-            'statistics_type' => 'collection',
+        $view = new ViewModel([
+            'type' => 'item-set',
+            'results' => $results,
             'years' => $years,
             'yearFilter' => $year,
             'monthFilter' => $month,
         ]);
+        return $view
+            ->setTemplate($isSiteRequest ? 'statistics/site/browse/by-item-set' : 'statistics/admin/browse/by-item-set');
     }
 
-    protected function _getHitsPerCollection($hitsPerCollection, $collectionId)
+    /**
+     * @fixme Finalize integration of item set tree.
+     */
+    protected function getHitsByItemSet($hitsPerItemSet, $itemSetId): int
     {
         $childrenHits = 0;
-        $childCollections = get_db()->getTable('CollectionTree')->getChildCollections($collectionId);
-        foreach ($childCollections as $childCollection) {
-            $childrenHits += $this->_getHitsPerCollection($hitsPerCollection, $childCollection['id']);
+        $childItemSetIds = $this->api()->search('item_sets_tree_edge', [], ['returnScalar' => 'id'])->getChildCollections($itemSetId);
+        foreach ($childItemSetIds as $childItemSetId) {
+            $childrenHits += $this->getHitsPerItemSet($hitsPerItemSet, $childItemSetId);
         }
-
-        return ($hitsPerCollection[$collectionId] ?? 0) + $childrenHits;
-    }
-
-    /**
-     * Retrieve and render a set of rows for the controller's model.
-     *
-     * Here, values are not resources, but array of synthetic values.
-     */
-    protected function browseActionByField(array $params): void
-    {
-        $resourcesPerPage = $this->getBrowseResourcesPerPage();
-        $currentPage = empty($params['page']) ? 1 : (int) $params['page'];
-
-        $statistic = $this->viewHelpers('statistic');
-
-        $resources = $statistic->getFrequents($params, $resourcesPerPage, $currentPage);
-        $totalResources = $statistic->countFrequents($params);
-
-        // Add pagination data to the registry. Used by pagination_links().
-        if ($resourcesPerPage) {
-            Zend_Registry::set('pagination', [
-                'page' => $currentPage,
-                'per_page' => $resourcesPerPage,
-                'total_results' => $totalResources,
-            ]);
-        }
-
-        $this->view->assign([$pluralName => $resources, 'total_results' => $totalResources]);
-    }
-
-    /**
-     * Use global settings for determining browse page limits.
-     */
-    protected function getBrowseResourcesPerPage(): int
-    {
-        return $this->status()->isAdminRequest()
-            ? (int) $this->settings()->get('statistics_per_page_admin')
-            : (int) $this->settings()->get('statistics_per_page_public');
+        return ($hitsPerItemSet[$itemSetId] ?? 0) + $childrenHits;
     }
 }

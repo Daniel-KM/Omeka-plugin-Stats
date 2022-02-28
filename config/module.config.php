@@ -34,10 +34,10 @@ return [
     ],
     'controllers' => [
         'invokables' => [
-            'Statistics\Controller\Browse' => Controller\BrowseController::class ,
             'Statistics\Controller\Summary' => Controller\SummaryController::class,
         ],
         'factories' => [
+            'Statistics\Controller\Browse' => Service\Controller\BrowseControllerFactory::class ,
             'Statistics\Controller\Download' => Service\Controller\DownloadControllerFactory::class,
         ],
     ],

@@ -1,3 +1,4 @@
+# Important: the index for column "created" of the table "hit" is used in the Browse Controller.
 CREATE TABLE `stat` (
     `id` INT AUTO_INCREMENT NOT NULL,
     `type` VARCHAR(8) NOT NULL,
