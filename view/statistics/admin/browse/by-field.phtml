@@ -1,9 +1,9 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Stats\Api\Representation\StatRepresentation[] $resources
- * @var \Stats\Api\Representation\StatRepresentation[] $stats
- * @var \Stats\Api\Representation\HitRepresentation[] $hits
+ * @var \Statistics\Api\Representation\StatRepresentation[] $resources
+ * @var \Statistics\Api\Representation\StatRepresentation[] $stats
+ * @var \Statistics\Api\Representation\HitRepresentation[] $hits
  * @var string $userStatus
  * @var int[] $years
  * @var int $yearFilter
@@ -27,7 +27,7 @@ $totalResults = 0;
 
 <?= $this->pageTitle($translate('Stats'), 1, sprintf($translate('Stats (%s total)'), $totalResults)) ?>
 
-<?= $this->partial('common/stats-nav') ?>
+<?= $this->partial('common/statistics-nav') ?>
 
 <p>
     <strong><?= $translate('By %s (%s)', $label_field, $this->stats()->human_user_status($user_status)); ?></strong>
@@ -39,7 +39,7 @@ $totalResults = 0;
 <?php if ($total_results):
     echo pagination_links();
     ?>
-    <table class="stats-table">
+    <table class="statistics-table">
     <thead>
         <tr>
             <?php
@@ -53,10 +53,10 @@ $totalResults = 0;
     <tbody>
 <?php $key = 0; ?>
 <?php foreach ($hits as $position => $hit): ?>
-        <tr class="stats-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
-            <td class="stats-field"><?php echo $hit[$field]; ?></td>
-            <td class="stats-hits"><?php echo $hit['hits']; ?></td>
-            <td class="stats-percent"><?php echo round($hit['hits'] * 100 / $total_not_empty, 1); ?>%</td>
+        <tr class="statistics-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
+            <td class="statistics-field"><?php echo $hit[$field]; ?></td>
+            <td class="statistics-hits"><?php echo $hit['hits']; ?></td>
+            <td class="statistics-percent"><?php echo round($hit['hits'] * 100 / $total_not_empty, 1); ?>%</td>
         </tr>
 <?php endforeach; ?>
     </tbody>
@@ -68,7 +68,7 @@ $totalResults = 0;
         <h2><?= $translate('There is no hit yet.'); ?></h2>
     <?php else: ?>
         <p><?= $translate('The query searched %s hits and returned no results.', total_records('Hit')); ?></p>
-        <p><a href="<?php echo url('stats/browse/by-' . $stats_type); ?>"><?= $translate('See all stats.'); ?></a></p>
+        <p><a href="<?php echo url('admin/statistics/browse/by-' . $stats_type); ?>"><?= $translate('See all stats.'); ?></a></p>
     <?php endif; ?>
 <?php endif; ?>
     <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>

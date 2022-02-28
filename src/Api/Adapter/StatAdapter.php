@@ -1,18 +1,16 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Api\Adapter;
+namespace Statistics\Api\Adapter;
 
 use DateTime;
 use Doctrine\ORM\QueryBuilder;
 use Omeka\Api\Adapter\AbstractEntityAdapter;
 use Omeka\Api\Request;
 use Omeka\Entity\EntityInterface;
-use Omeka\Entity\User;
 use Omeka\Stdlib\ErrorStore;
-use Stats\Api\Representation\HitRepresentation;
-use Stats\Api\Representation\StatRepresentation;
-use Stats\Entity\Hit;
-use Stats\Entity\Stat;
+use Statistics\Api\Representation\HitRepresentation;
+use Statistics\Api\Representation\StatRepresentation;
+use Statistics\Entity\Stat;
 use Omeka\Api\Representation\AbstractRepresentation;
 use Omeka\Entity\AbstractEntity;
 use Omeka\Stdlib\Message;
@@ -176,7 +174,7 @@ class StatAdapter extends AbstractEntityAdapter
 
     public function hydrate(Request $request, EntityInterface $entity, ErrorStore $errorStore): void
     {
-        /** @var \Stats\Entity\Stat $entity */
+        /** @var \Statistics\Entity\Stat $entity */
         $data = $request->getContent();
         $isUpdate = $request->getOperation() === Request::UPDATE;
 
@@ -436,7 +434,7 @@ class StatAdapter extends AbstractEntityAdapter
         $expr = $qb->expr();
         $qb
             ->select("omeka_root.$hitsColumn")
-            ->from(\Stats\Entity\Stat::class, 'omeka_root')
+            ->from(\Statistics\Entity\Stat::class, 'omeka_root')
             // Limit by one, but there can't be more than one row when criteria
             // is fine.
             ->limit(1);
@@ -464,7 +462,7 @@ class StatAdapter extends AbstractEntityAdapter
         // Simply count the number of position greater than the requested one.
         $qb = $connection->createQueryBuilder()
             ->select('COUNT(DISTINCT(id)) + 1 AS num')
-            ->from(\Stats\Entity\Stat::class, 'omeka_root')
+            ->from(\Statistics\Entity\Stat::class, 'omeka_root')
             ->where($expr->gt('omeka_root.' . $hitsColumn, ':total_hits'));
 
         // $criteria keys are already checked.
@@ -566,7 +564,7 @@ class StatAdapter extends AbstractEntityAdapter
     {
         $column = $this->statusColumns[$userStatus] ?? 'hits';
         $criteria = [
-            // Needed if $resource_type is empty.
+            // Needed if $entityName is empty.
             'type' => Stat::TYPE_RESOURCE,
             'entity_name' => $entityName,
             'not_zero' => $column,

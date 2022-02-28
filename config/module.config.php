@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Stats;
+namespace Statistics;
 
 return [
     'entity_manager' => [
@@ -34,26 +34,26 @@ return [
     ],
     'controllers' => [
         'invokables' => [
-            'Stats\Controller\Browse' => Controller\BrowseController::class ,
-            'Stats\Controller\Download' => Controller\DownloadController::class,
-            'Stats\Controller\Summary' => Controller\SummaryController::class,
+            'Statistics\Controller\Browse' => Controller\BrowseController::class ,
+            'Statistics\Controller\Download' => Controller\DownloadController::class,
+            'Statistics\Controller\Summary' => Controller\SummaryController::class,
         ],
     ],
     // TODO Merge bulk navigation and route with module BulkImport (require a main page?).
     'navigation' => [
         'AdminModule' => [
-            'stats' => [
-                'label' => 'Stats', // @translate
-                'route' => 'admin/stat/default',
+            'statistics' => [
+                'label' => 'Statistics', // @translate
+                'route' => 'admin/statistics/default',
                 'controller' => 'summary',
-                'resource' => 'Stats\Controller\Summary',
+                'resource' => 'Statistics\Controller\Summary',
                 'class' => 'settings o-icon-settings o-icon-chart-line fas fa-chart-line',
                 'pages' => [
                     [
                         'label' => 'Summary', // @translate
-                        'route' => 'admin/stats/default',
+                        'route' => 'admin/statistics/default',
                         'controller' => 'summary',
-                        'resource' => 'Stats\Controller\Summary',
+                        'resource' => 'Statistics\Controller\Summary',
                         'pages' => [
                             [
                                 'route' => 'admin/stat',
@@ -69,12 +69,12 @@ return [
         'routes' => [
             'admin' => [
                 'child_routes' => [
-                    'stats' => [
+                    'statistics' => [
                         'type' => \Laminas\Router\Http\Literal::class,
                         'options' => [
-                            'route' => '/stat',
+                            'route' => '/statistics',
                             'defaults' => [
-                                '__NAMESPACE__' => 'Stats\Controller',
+                                '__NAMESPACE__' => 'Statistics\Controller',
                                 '__ADMIN__' => true,
                                 'controller' => 'Summary',
                             ],
@@ -121,7 +121,7 @@ return [
                         'filename' => '.+',
                     ],
                     'defaults' => [
-                        '__NAMESPACE__' => 'Stats\Controller',
+                        '__NAMESPACE__' => 'Statistics\Controller',
                         'controller' => 'Download',
                         'action' => 'files',
                     ],
@@ -147,45 +147,45 @@ return [
             'stats_vieweds' => Shortcode\Stats::class,
         ],
     ],
-    'stats' => [
+    'statistics' => [
         'settings' => [
             // Privacy settings.
-            'stats_privacy' => 'anonymous',
-            'stats_include_bots' => false,
+            'statistics_privacy' => 'anonymous',
+            'statistics_include_bots' => false,
             // Display.
-            'stats_default_user_status_admin' => 'hits',
-            'stats_default_user_status_public' => 'anonymous',
-            'stats_per_page_admin' => 100,
-            'stats_per_page_public' => 10,
+            'statistics_default_user_status_admin' => 'hits',
+            'statistics_default_user_status_public' => 'anonymous',
+            'statistics_per_page_admin' => 100,
+            'statistics_per_page_public' => 10,
             // Without roles.
-            'stats_public_allow_summary' => false,
-            'stats_public_allow_browse_pages' => false,
-            'stats_public_allow_browse_resources' => false,
-            'stats_public_allow_browse_downloads' => false,
-            'stats_public_allow_browse_fields' => false,
+            'statistics_public_allow_summary' => false,
+            'statistics_public_allow_browse_pages' => false,
+            'statistics_public_allow_browse_resources' => false,
+            'statistics_public_allow_browse_downloads' => false,
+            'statistics_public_allow_browse_fields' => false,
             // With roles, in particular if Guest is installed.
             /*
-            'stats_roles_summary' => [
+            'statistics_roles_summary' => [
                 'admin',
             ],
-            'stats_roles_browse_pages' => [
+            'statistics_roles_browse_pages' => [
                 'admin',
             ],
-            'stats_roles_browse_resources' => [
+            'statistics_roles_browse_resources' => [
                 'admin',
             ],
-            'stats_roles_browse_downloads' => [
+            'statistics_roles_browse_downloads' => [
                 'admin',
             ],
-            'stats_roles_browse_fields' => [
+            'statistics_roles_browse_fields' => [
                 'admin',
             ],
-            'stats_roles_browse_item_sets' => [
+            'statistics_roles_browse_item_sets' => [
                 'admin',
             ],
             */
             /*
-            'stats_display_by_hooks' => [
+            'statistics_display_by_hooks' => [
                 'admin_dashboard',
                 'admin_item_show_sidebar',
                 'admin_item_set_show_sidebar',

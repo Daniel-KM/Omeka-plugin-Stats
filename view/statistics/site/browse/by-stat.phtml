@@ -6,7 +6,7 @@ echo head(array(
     'bodyclass' => 'stats browse',
     'content_class' => 'horizontal-nav',
 ));
-echo common('stats-nav');
+echo common('statistics-nav');
 ?>
 <div id="primary">
     <h1 title="<?php echo $pageTitle; ?>" class="section-title"><?php echo $pageTitle; ?></h1>
@@ -15,7 +15,7 @@ echo common('stats-nav');
 <?php if ($total_results):
     echo pagination_links();
     ?>
-    <table class="stats-table">
+    <table class="statistics-table">
     <thead>
         <tr>
             <?php
@@ -31,23 +31,23 @@ echo common('stats-nav');
     <tbody>
         <?php $key = 0; ?>
         <?php foreach (loop('stats') as $stat): ?>
-        <tr class="stats-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
-            <td class="stats-url">
-                <div class="stats-hover">
+        <tr class="statistics-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
+            <td class="statistics-url">
+                <div class="statistics-hover">
                     <a href="<?php echo WEB_ROOT . $stat->url; ?>"><?php echo $stat->url; ?></a>
                 </div>
             </td>
-            <td class="stats-hits">
+            <td class="statistics-hits">
                 <?php echo $stat->$user_status; ?>
             </td>
-            <td class="stats-record">
+            <td class="statistics-record">
                 <?php if ($stat->hasRecord()): ?>
-                <div class="stats-hover">
+                <div class="statistics-hover">
                     <?php echo $this->stats()->link_to_record($stat->Record); ?>
                 </div>
                 <?php endif; ?>
             </td>
-            <td class="stats-record-type">
+            <td class="statistics-record-type">
                 <?php if ($stat->hasRecord()):
                     echo $stat->getHumanRecordType();
                 endif; ?>
@@ -66,7 +66,7 @@ echo common('stats-nav');
         <h2><?php echo __('There is no stat yet.'); ?></h2>
     <?php else: ?>
         <p><?php echo __('The query searched %s rows and returned no results.', total_records('Stat')); ?></p>
-        <p><a href="<?php echo url('stats/browse/by-' . $stats_type); ?>"><?php echo __('See all stats.'); ?></a></p>
+        <p><a href="<?php echo url('admin/statistics/browse/by-' . $stats_type); ?>"><?php echo __('See all stats.'); ?></a></p>
     <?php endif; ?>
 <?php endif; ?>
     <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>

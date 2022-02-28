@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Api\Representation;
+namespace Statistics\Api\Representation;
 
 use Omeka\Api\Exception\NotFoundException;
 use Omeka\Api\Representation\AbstractEntityRepresentation;
 use Omeka\Api\Representation\AbstractResourceRepresentation;
 use Omeka\Api\Request;
-use Stats\Entity\Stat;
+use Statistics\Entity\Stat;
 
 /**
  * Stat synthetises data from Hits.
@@ -51,7 +51,7 @@ class StatRepresentation extends AbstractEntityRepresentation
 
     public function getJsonLdType()
     {
-        return 'o-module-stats:Stat';
+        return 'o-module-statistics:Stat';
     }
 
     /**

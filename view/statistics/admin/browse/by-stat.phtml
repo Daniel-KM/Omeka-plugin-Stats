@@ -1,7 +1,7 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Stats\Api\Representation\StatRepresentation[] $stats
+ * @var \Statistics\Api\Representation\StatRepresentation[] $stats
  * @var string $userStatus
  * @var string $type
  *
@@ -15,9 +15,9 @@ $translate = $plugins->get('translate');
 $urlHelper = $plugins->get('url');
 $escapeAttr = $plugins->get('escapeHtmlAttr');
 
-$this->headLink()->prependStylesheet($assetUrl('css/stats.css', 'Stats'));
+$this->headLink()->prependStylesheet($assetUrl('css/statistics.css', 'Statistics'));
 
-$this->htmlElement('body')->appendAttribute('class', 'stats browse');
+$this->htmlElement('body')->appendAttribute('class', 'statistics browse');
 
 $totalResults = $this->pagination()->getPaginator()->getTotalCount();
 $currentPage = $this->params()->fromQuery('page');
@@ -29,16 +29,16 @@ $resource = null;
 
 <?= $this->pageTitle(sprintf($translate('Stats (%s total)'), $totalResults), 1, $translate('Statistics')) ?>
 
-<?= $this->partial('common/stats-nav') ?>
+<?= $this->partial('common/statistics-nav') ?>
 
 <?php if ($stats): ?>
 <div class="browse-controls">
     <?= $pagination = $this->pagination(null, $totalResults, $currentPage, $limit) ?>
     <?php //= $this->hyperlink($translate('Advanced search'), $urlHelper(null, ['action' => 'search'], ['query' => $this->params()->fromQuery()], true), ['class' => 'advanced-search']) ?>
-    <?= $this->partial('common/quick-filters') ?>
+    <?= $this->partial('common/statistics-quick-filters') ?>
     <?php // echo $this->sortSelector($sortHeadings); ?>
 </div>
-<table class="tablesaw stats-table" data-tablesaw-mode="stack">
+<table class="tablesaw statistics-table" data-tablesaw-mode="stack">
     <thead>
         <tr>
             <th>
@@ -69,29 +69,29 @@ $resource = null;
     </thead>
     <tbody>
         <?php foreach ($stats as $stat): ?>
-        <tr class="stats-stat">
-            <td class="stats-url">
-                <div class="stats-hover">
+        <tr class="statistics-stat">
+            <td class="statistics-url">
+                <div class="statistics-hover">
                     <a href="<?= $escapeAttr($basePath . $stat->hitUrl()) ?>"><?= $escape($stat->hitUrl()) ?></a>
                 </div>
             </td>
-            <td class="stats-hits">
+            <td class="statistics-hits">
                 <?= $stat->totalHits() ?>
             </td>
-            <td class="stats-hits stats-anonymous">
+            <td class="statistics-hits stats-anonymous">
                 <?= $stat->totalHits('anonymous') ?>
             </td>
-            <td class="stats-hits stats-identified">
+            <td class="statistics-hits stats-identified">
                 <?= $stat->totalHits('identified') ?>
             </td>
-            <td class="stats-resource">
+            <td class="statistics-resource">
                 <?php if ($stat->hasResource()): ?>
-                <div class="stats-hover">
+                <div class="statistics-hover">
                     <?= ($resource = $stat->entityResource()) ? $resource->linkPretty() : sprintf('%s #%s (unavailable)', $translate($stat->entityName()), $stat->entityName()) ?>
                 </div>
                 <?php endif; ?>
             </td>
-            <td class="stats-record-type">
+            <td class="statistics-record-type">
                 <?php if ($stat->hasResource()): ?>
                     <?= $stat->getHumanResourceType() ?>
                 <?php endif; ?>
@@ -111,7 +111,7 @@ $resource = null;
         <p><?= $translate('Omeka could not find any stats.') ?></p>
     <?php else: ?>
         <p><?= sprintf($translate('The query searched %s rows and returned no results.'), $totalStats) ?></p>
-        <p><a href="<?= url('admin/stats/default', ['action' => 'by-' . $type], true) ?>"><?= $translate('See all stats.') ?></a></p>
+        <p><a href="<?= url('admin/statistics/default', ['action' => 'by-' . $type], true) ?>"><?= $translate('See all stats.') ?></a></p>
     <?php endif; ?>
     </div>
 <?php endif; ?>

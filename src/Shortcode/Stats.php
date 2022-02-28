@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Shortcode;
+namespace Statistics\Shortcode;
 
 use Shortcode\Shortcode\AbstractShortcode;
 
@@ -55,7 +55,7 @@ class Stats extends AbstractShortcode
         }
 
         // Don't return null.
-        return '<span class="stats-data stats-hits">'
+        return '<span class="statistics-data statistics-hits">'
             . (int) $result
             . '</span>';
     }
@@ -90,7 +90,7 @@ class Stats extends AbstractShortcode
         }
 
         // Don't return null.
-        return '<span class="stats-data stats-position">'
+        return '<span class="statistics-data statistics-position">'
             . (int) $result
             . '</span>';
     }

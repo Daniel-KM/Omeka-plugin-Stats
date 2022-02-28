@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Controller;
+namespace Statistics\Controller;
 
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\ServiceManager\ServiceLocatorInterface;
 use Laminas\View\Model\ViewModel;
-use Stats\Entity\Stat;
+use Statistics\Entity\Stat;
 
 /**
  * Controller to get summary of Stats.

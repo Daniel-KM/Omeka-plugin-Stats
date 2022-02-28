@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Stats\View\Helper;
+namespace Statistics\View\Helper;
 
 use Laminas\View\Helper\AbstractHelper;
-use Stats\Api\Adapter\HitAdapter;
-use Stats\Api\Adapter\StatAdapter;
-use Stats\Entity\Stat;
+use Statistics\Api\Adapter\HitAdapter;
+use Statistics\Api\Adapter\StatAdapter;
+use Statistics\Entity\Stat;
 use Omeka\Api\Representation\AbstractResourceRepresentation;
 
 /**
@@ -18,12 +18,12 @@ use Omeka\Api\Representation\AbstractResourceRepresentation;
 class Statistic extends AbstractHelper
 {
     /**
-     * @var \Stats\Api\Adapter\HitAdapter
+     * @var \Statistics\Api\Adapter\HitAdapter
      */
     protected $hitAdapter;
 
     /**
-     * @var \Stats\Api\Adapter\StatAdapter
+     * @var \Statistics\Api\Adapter\StatAdapter
      */
     protected $statAdapter;
 
@@ -297,7 +297,7 @@ class Statistic extends AbstractHelper
                 'userStatus' => $userStatus,
                 'position' => $key + 1,
             ];
-            $html .= $partial('common/stats-single', $params);
+            $html .= $partial('common/statistics-single', $params);
         }
         return $html;
     }
@@ -408,7 +408,7 @@ class Statistic extends AbstractHelper
         }
         $userStatus = $this->normalizeUserStatus($userStatus);
         $stat = $this->view->api()->searchOne('stats', ['url' => $url, 'type' => Stat::TYPE_PAGE])->getContent();
-        return $this->view->partial('common/stats-value', [
+        return $this->view->partial('common/statistics-value', [
             'type' => Stat::TYPE_PAGE,
             'stat' => $stat,
             'userStatus' => $userStatus,
@@ -431,7 +431,7 @@ class Statistic extends AbstractHelper
         }
         $stat = $this->view->api()->searchOne('stats', ['entity_name' => $resource['type'], 'entity_id' => $resource['id'], 'type' => Stat::TYPE_RESOURCE])->getContent();
         $userStatus = $this->normalizeUserStatus($userStatus);
-        return $this->view->partial('common/stats-value', [
+        return $this->view->partial('common/statistics-value', [
             'type' => Stat::TYPE_RESOURCE,
             'stat' => $stat,
             'userStatus' => $userStatus,
@@ -453,7 +453,7 @@ class Statistic extends AbstractHelper
                 ? ['entity_name' => 'media', 'entity_id' => $downloadId, 'type' => Stat::TYPE_DOWNLOAD]
                 : ['url' => $downloadId, 'type' => Stat::TYPE_DOWNLOAD]
             )->getContent();
-        return $this->view->partial('common/stats-value', [
+        return $this->view->partial('common/statistics-value', [
             'type' => Stat::TYPE_DOWNLOAD,
             'stat' => $stat,
             'userStatus' => $userStatus,
@@ -629,8 +629,8 @@ class Statistic extends AbstractHelper
             return $userStatuses[$userStatus];
         }
         return $this->view->status()->isAdminRequest()
-            ? (string) $this->view->setting('stats_default_user_status_admin', 'hits')
-            : (string) $this->view->setting('stats_default_user_status_public', 'anonymous');
+            ? (string) $this->view->setting('statistics_default_user_status_admin', 'hits')
+            : (string) $this->view->setting('statistics_default_user_status_public', 'anonymous');
     }
 
     protected function normalizeResourceType(?string $type): ?string

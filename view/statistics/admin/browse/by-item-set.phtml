@@ -1,9 +1,9 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Stats\Api\Representation\StatRepresentation[] $resources
- * @var \Stats\Api\Representation\StatRepresentation[] $stats
- * @var \Stats\Api\Representation\HitRepresentation[] $hits
+ * @var \Statistics\Api\Representation\StatRepresentation[] $resources
+ * @var \Statistics\Api\Representation\StatRepresentation[] $stats
+ * @var \Statistics\Api\Representation\HitRepresentation[] $hits
  * @var string $userStatus
  * @var int[] $years
  * @var int $yearFilter
@@ -21,7 +21,7 @@ $this->htmlElement('body')->appendAttribute('class', 'stats browse');
 
 <?= $this->pageTitle($translate('Stats'), 1, $translate('By Collection')) ?>
 
-<?= $this->partial('common/stats-nav') ?>
+<?= $this->partial('common/statistics-nav') ?>
 
 <form method="get">
     <select name="year">
@@ -55,7 +55,7 @@ $this->htmlElement('body')->appendAttribute('class', 'stats browse');
 </form>
 
 <?php if (count($stats)): ?>
-    <table class="stats-table">
+    <table class="statistics-table">
     <thead>
         <tr>
             <?php
@@ -67,9 +67,9 @@ $this->htmlElement('body')->appendAttribute('class', 'stats browse');
     </thead>
     <tbody>
 <?php foreach ($hits as $position => $hit): ?>
-        <tr class="stats-stat <?= $position % 2 === 0 ? 'odd' : 'even' ?>">
-            <td class="stats-field"><?= $hit->field('item-set') ?></td>
-            <td class="stats-hits"><?= $hit->totalPage() ?></td>
+        <tr class="statistics-stat <?= $position % 2 === 0 ? 'odd' : 'even' ?>">
+            <td class="statistics-field"><?= $hit->field('item-set') ?></td>
+            <td class="statistics-hits"><?= $hit->totalPage() ?></td>
         </tr>
 <?php endforeach; ?>
     </tbody>
@@ -81,6 +81,6 @@ $this->htmlElement('body')->appendAttribute('class', 'stats browse');
         <h2><?= $translate('There is no hit yet.') ?></h2>
     <?php else: ?>
         <p><?= $translate('The query searched %s hits and returned no results.', $totalHits); ?></p>
-        <p><a href="<?= $this->url('admin/stats/default', ['action' => 'by-collection'], true) ?>"><?= $translate('See all stats.') ?></a></p>
+        <p><a href="<?= $this->url('admin/statistics/default', ['action' => 'by-collection'], true) ?>"><?= $translate('See all stats.') ?></a></p>
     <?php endif; ?>
 <?php endif; ?>

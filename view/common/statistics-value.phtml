@@ -1,7 +1,7 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Stats\Api\Representation\StatRepresentation $stat
+ * @var \Statistics\Api\Representation\StatRepresentation $stat
  * @var string $type
  * @var string $userStatus
  */
@@ -10,15 +10,15 @@ $plugins = $this->getHelperPluginManager();
 $translate = $plugins->get('translate');
 ?>
 
-<div class="stats-stat">
+<div class="statistics-stat">
     <p><?php
     if ($type === 'download'):
         if (empty($stat)):
             echo $translate('Not downloaded');
         else:
             echo sprintf($translate('Position: %s (%s downloads)'),
-                '<span class="stats-position">' . $stat->position($userStatus) . '</span>',
-                '<span class="stats-hits">' . $stat->totalHits($userStatus) . '</span>'
+                '<span class="statistics-position">' . $stat->position($userStatus) . '</span>',
+                '<span class="statistics-hits">' . $stat->totalHits($userStatus) . '</span>'
             );
         endif;
     else:
@@ -26,8 +26,8 @@ $translate = $plugins->get('translate');
             echo $translate('Not viewed');
         else:
             echo sprintf($translate('Position: %s (%s views)'),
-                '<span class="stats-position">' . $stat->position($userStatus) . '</span>',
-                '<span class="stats-hits">' . $stat->totalHits($userStatus) . '</span>'
+                '<span class="statistics-position">' . $stat->position($userStatus) . '</span>',
+                '<span class="statistics-hits">' . $stat->totalHits($userStatus) . '</span>'
             );
         endif;
     endif;

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Service\ViewHelper;
+namespace Statistics\Service\ViewHelper;
 
-use Stats\View\Helper\Statistic;
+use Statistics\View\Helper\Statistic;
 use Interop\Container\ContainerInterface;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 

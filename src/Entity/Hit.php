@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Entity;
+namespace Statistics\Entity;
 
 use DateTime;
 use Omeka\Entity\AbstractEntity;

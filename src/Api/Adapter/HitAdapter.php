@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Api\Adapter;
+namespace Statistics\Api\Adapter;
 
 use DateTime;
 use Doctrine\ORM\QueryBuilder;
@@ -10,10 +10,10 @@ use Omeka\Api\Request;
 use Omeka\Entity\EntityInterface;
 use Omeka\Entity\User;
 use Omeka\Stdlib\ErrorStore;
-use Stats\Api\Representation\HitRepresentation;
-use Stats\Api\Representation\StatRepresentation;
-use Stats\Entity\Hit;
-use Stats\Entity\Stat;
+use Statistics\Api\Representation\HitRepresentation;
+use Statistics\Api\Representation\StatRepresentation;
+use Statistics\Entity\Hit;
+use Statistics\Entity\Stat;
 use Omeka\Api\Representation\AbstractRepresentation;
 use Omeka\Entity\AbstractEntity;
 
@@ -236,7 +236,7 @@ class HitAdapter extends AbstractEntityAdapter
      */
     public function hydrate(Request $request, EntityInterface $entity, ErrorStore $errorStore): void
     {
-        /** @var \Stats\Entity\Hit $entity */
+        /** @var \Statistics\Entity\Hit $entity */
         // A hit cannot be updated here: it's a static resource.
         if (Request::UPDATE === $request->getOperation()) {
             return;
@@ -275,7 +275,7 @@ class HitAdapter extends AbstractEntityAdapter
         $now = new DateTime('now');
         $entity->setCreated($now);
 
-        /** @var \Stats\Api\Adapter\StatAdapter $statAdapter */
+        /** @var \Statistics\Api\Adapter\StatAdapter $statAdapter */
         $statAdapter = $this->getAdapter('stats');
         $entityManger = $this->getEntityManager();
 
@@ -613,7 +613,7 @@ class HitAdapter extends AbstractEntityAdapter
         }
 
         $settings = $this->getServiceLocator()->get('Omeka\Settings');
-        switch ($settings->get('stats_privacy')) {
+        switch ($settings->get('statistics_privacy')) {
             default:
             case 'anonymous':
                 return '::';

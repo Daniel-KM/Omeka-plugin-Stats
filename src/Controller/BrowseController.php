@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Stats\Controller;
+namespace Statistics\Controller;
 
 use Laminas\Mvc\Controller\AbstractActionController;
 use Laminas\View\Model\ViewModel;
-use Stats\Entity\Stat;
+use Statistics\Entity\Stat;
 
 /**
  * Controller to browse Stats.
@@ -26,7 +26,7 @@ class BrowseController extends AbstractActionController
     {
         $view = $this->byPageAction();
         return $view
-            ->setTemplate('stats/admin/browse/by-stat');
+            ->setTemplate('statistics/admin/browse/by-stat');
     }
 
     /**
@@ -35,7 +35,7 @@ class BrowseController extends AbstractActionController
     public function byPageAction()
     {
         $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
-        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatus = $this->settings()->get('statistics_default_user_status_admin');
         $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
         $this->setBrowseDefaults($userStatusBrowse);
 
@@ -49,7 +49,7 @@ class BrowseController extends AbstractActionController
             'userStatus' => $userStatus,
         ]);
         return $view
-            ->setTemplate('stats/admin/browse/by-stat');
+            ->setTemplate('statistics/admin/browse/by-stat');
     }
 
     /**
@@ -58,7 +58,7 @@ class BrowseController extends AbstractActionController
     public function byResourceAction()
     {
         $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
-        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatus = $this->settings()->get('statistics_default_user_status_admin');
         $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
         $this->setBrowseDefaults($userStatusBrowse);
 
@@ -72,7 +72,7 @@ class BrowseController extends AbstractActionController
             'userStatus' => $userStatus,
         ]);
         return $view
-            ->setTemplate('stats/admin/browse/by-stat');
+            ->setTemplate('statistics/admin/browse/by-stat');
     }
 
     /**
@@ -81,7 +81,7 @@ class BrowseController extends AbstractActionController
     public function byDownloadAction()
     {
         $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
-        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatus = $this->settings()->get('statistics_default_user_status_admin');
         $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
         $this->setBrowseDefaults($userStatusBrowse);
 
@@ -95,7 +95,7 @@ class BrowseController extends AbstractActionController
             'userStatus' => $userStatus,
         ]);
         return $view
-            ->setTemplate('stats/admin/browse/by-stat');
+            ->setTemplate('statistics/admin/browse/by-stat');
     }
 
     /**
@@ -103,7 +103,7 @@ class BrowseController extends AbstractActionController
      */
     public function byFieldAction()
     {
-        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatus = $this->settings()->get('statistics_default_user_status_admin');
 
         $params = $this->params()->fromQuery();
 
@@ -157,7 +157,7 @@ class BrowseController extends AbstractActionController
             'userStatus' => $userStatus,
         ]);
         return $view
-            ->setTemplate('stats/admin/browse/by-field');
+            ->setTemplate('statistics/admin/browse/by-field');
     }
 
     public function byItemSetAction(): void
@@ -235,7 +235,7 @@ class BrowseController extends AbstractActionController
         $this->view->assign([
             'hits' => $results,
             'total_results' => count($results),
-            'stats_type' => 'collection',
+            'statistics_type' => 'collection',
             'years' => $years,
             'yearFilter' => $year,
             'monthFilter' => $month,
@@ -286,7 +286,7 @@ class BrowseController extends AbstractActionController
     protected function getBrowseResourcesPerPage(): int
     {
         return $this->status()->isAdminRequest()
-            ? (int) $this->settings()->get('stats_per_page_admin')
-            : (int) $this->settings()->get('stats_per_page_public');
+            ? (int) $this->settings()->get('statistics_per_page_admin')
+            : (int) $this->settings()->get('statistics_per_page_public');
     }
 }
