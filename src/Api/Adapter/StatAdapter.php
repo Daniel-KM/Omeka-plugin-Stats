@@ -93,6 +93,10 @@ class StatAdapter extends AbstractEntityAdapter
             }
         }
 
+        // The query may use "resource_type" or "entity_name".
+        if (isset($query['resource_type'])) {
+            $query['entity_name'] = $query['resource_type'];
+        }
         if (isset($query['entity_name'])) {
             if (is_array($query['entity_name'])) {
                 $qb->andWhere($expr->in(
@@ -107,6 +111,10 @@ class StatAdapter extends AbstractEntityAdapter
             }
         }
 
+        // The query may use "resource_id" or "entity_id".
+        if (isset($query['resource_id'])) {
+            $query['entity_id'] = $query['resource_id'];
+        }
         if (isset($query['entity_id'])) {
             if (is_array($query['entity_id'])) {
                 $qb->andWhere($expr->in(
