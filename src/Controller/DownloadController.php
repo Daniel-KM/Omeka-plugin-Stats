@@ -1,12 +1,18 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Stats\Controller;
+
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\ServiceManager\ServiceLocatorInterface;
+use Laminas\View\Model\ViewModel;
+use Stats\Entity\Stat;
+
 /**
  * The download controller class.
  *
  * Count direct download of a file.
- *
- * @package Stats
  */
-class Stats_DownloadController extends Omeka_Controller_AbstractActionController
+class DownloadController extends AbstractActionController
 {
     protected $_type;
     protected $_storage;
@@ -23,7 +29,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
      *
      * @see self::filesAction()
      */
-    public function indexAction()
+    public function indexAction(): void
     {
         $this->forward('files');
     }
@@ -38,7 +44,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
 
         // Check post and throw to previous page in case of problem.
         if (!$this->_checkPost()) {
-            $this->_helper->flashMessenger(__("This file doesn't exist."), 'error');
+            $this->_helper->flashMessenger($this->translate('This file doesn’t exist.'), 'error'); // @translate
             return $this->_gotoPreviousPage();
         }
 
@@ -52,7 +58,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
     /**
      * Log the hit on the current file.
      */
-    protected function _logCurrentFile()
+    protected function _logCurrentFile(): void
     {
         $hit = new Hit;
         $hit->setCurrentRequest();
@@ -88,7 +94,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
 
         // To avoid big file issues, clear buffers and send headers separately.
         while (ob_get_level()) {
-	    ob_end_clean();
+            ob_end_clean();
         }
         $response->sendHeaders();
         readfile($filepath);
@@ -98,7 +104,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
     /**
      * Check if the post is good and save results.
      *
-     * @return boolean
+     * @return bool
      */
     protected function _checkPost()
     {
@@ -223,7 +229,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
     /**
      * Get and set file size. This allows to check if file really exists.
      *
-     * @return integer Length of the file.
+     * @return int Length of the file.
      */
     protected function _getFilesize()
     {
@@ -245,20 +251,19 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
         if (is_null($this->_file)) {
             $filename = $this->_getFilename();
             if ($this->_getStorage() == 'original') {
-                $this->_file =  get_db()->getTable('File')->findBySql('filename = ?', array($filename), true);
+                $this->_file = get_db()->getTable('File')->findBySql('filename = ?', [$filename], true);
             }
-           // Get a derivative: this is functional only because filenames are
-           // hashed.
+            // Get a derivative: this is functional only because filenames are
+            // hashed.
             else {
                 $originalFilename = substr($filename, 0, strlen($filename) - strlen(File::DERIVATIVE_EXT) - 1);
-                $this->_file = get_db()->getTable('File')->findBySql('filename LIKE ?', array($originalFilename . '%'), true);
+                $this->_file = get_db()->getTable('File')->findBySql('filename LIKE ?', [$originalFilename . '%'], true);
             }
 
             // Check rights: if the file belongs to a public item.
             if (empty($this->_file)) {
                 $this->_file = false;
-            }
-            else {
+            } else {
                 $item = $this->_file->getItem();
                 if (empty($item)) {
                     $this->_file = false;
@@ -267,7 +272,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
         }
 
         return $this->_file;
-     }
+    }
 
     /**
      * Set and get file object from the filename. Rights access are checked.
@@ -281,8 +286,7 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
             if ($type == 'original') {
                 $file = $this->_getFile();
                 $this->_contentType = $file->mime_type;
-            }
-            else {
+            } else {
                 $this->_contentType = 'image/jpeg';
             }
         }
@@ -329,13 +333,12 @@ class Stats_DownloadController extends Omeka_Controller_AbstractActionController
     /**
      * Redirect to previous page.
      */
-    protected function _gotoPreviousPage()
+    protected function _gotoPreviousPage(): void
     {
         $referrer = $this->getRequest()->getServer('HTTP_REFERER');
         if ($referrer) {
             $this->redirect($referrer);
-        }
-        else {
+        } else {
             $this->redirect(WEB_ROOT);
         }
     }

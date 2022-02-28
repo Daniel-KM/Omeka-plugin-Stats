@@ -1,50 +1,32 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Stats\Controller;
+
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
+use Stats\Entity\Stat;
+
 /**
  * Controller to browse Stats.
- * @package Stats
  */
-class Stats_BrowseController extends Omeka_Controller_AbstractActionController
+class BrowseController extends AbstractActionController
 {
-    private $_userStatus;
-
-    /**
-     * Controller-wide initialization. Sets the underlying model to use.
-     */
-    public function init()
-    {
-        // The default table depends on action.
-        $action = $this->getRequest()->getParam('action', 'index');
-        switch ($action) {
-            case 'by-field':
-                $this->_helper->db->setDefaultModelName('Hit');
-                break;
-            default:
-                $this->_helper->db->setDefaultModelName('Stat');
-                break;
-        }
-        $this->_userStatus = is_admin_theme()
-            ? get_option('stats_default_user_status_admin')
-            : get_option('stats_default_user_status_public');
-    }
-
     /**
      * Forward to the 'browse by page' action
-     *
-     * @see self::browseAction()
      */
     public function indexAction()
     {
-        $this->forward('by-page');
+        return $this->forward()->dispatch(SummaryController::class);
     }
 
     /**
      * Forward to the 'by-page' action
-     *
-     * @see self::browseAction()
      */
     public function browseAction()
     {
-        $this->forward('by-page');
+        $view = $this->byPageAction();
+        return $view
+            ->setTemplate('stats/admin/browse/by-stat');
     }
 
     /**
@@ -52,27 +34,45 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
      */
     public function byPageAction()
     {
-        $this->setParam('type', 'page');
-        $this->_browseAction();
-        $this->view->assign(array(
-            'stats_type' => 'page',
-            'user_status' => $this->_userStatus,
-        ));
-        $this->_helper->viewRenderer('by-stat');
+        $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
+        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
+        $this->setBrowseDefaults($userStatusBrowse);
+
+        $response = $this->api()->search('stats', ['type' => Stat::TYPE_PAGE, 'user_status' => $userStatus]);
+        $this->paginator($response->getTotalResults());
+        $stats = $response->getContent();
+
+        $view = new ViewModel([
+            'resources' => $stats,
+            'stats' => $stats,
+            'userStatus' => $userStatus,
+        ]);
+        return $view
+            ->setTemplate('stats/admin/browse/by-stat');
     }
 
     /**
-     * Browse rows by record action.
+     * Browse rows by resource action.
      */
-    public function byRecordAction()
+    public function byResourceAction()
     {
-        $this->setParam('type', 'record');
-        $this->_browseAction();
-        $this->view->assign(array(
-            'stats_type' => 'record',
-            'user_status' => $this->_userStatus,
-        ));
-        $this->_helper->viewRenderer('by-stat');
+        $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
+        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
+        $this->setBrowseDefaults($userStatusBrowse);
+
+        $response = $this->api()->search('stats', ['type' => Stat::TYPE_RESOURCE, 'user_status' => $userStatus]);
+        $this->paginator($response->getTotalResults());
+        $stats = $response->getContent();
+
+        $view = new ViewModel([
+            'resources' => $stats,
+            'stats' => $stats,
+            'userStatus' => $userStatus,
+        ]);
+        return $view
+            ->setTemplate('stats/admin/browse/by-stat');
     }
 
     /**
@@ -80,27 +80,22 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
      */
     public function byDownloadAction()
     {
-        $this->setParam('type', 'download');
-        $this->_browseAction();
-        $this->view->assign(array(
-            'stats_type' => 'download',
-            'user_status' => $this->_userStatus,
-        ));
-        $this->_helper->viewRenderer('by-stat');
-    }
+        $defaultSorts = ['anonymous' => 'total_hits_anonymous', 'identified' => 'total_hits_identified'];
+        $userStatus = $this->settings()->get('stats_default_user_status_admin');
+        $userStatusBrowse = $defaultSorts[$userStatus] ?? 'total_hits';
+        $this->setBrowseDefaults($userStatusBrowse);
 
-    /**
-     * Browse rows action.
-     */
-    public function _browseAction()
-    {
-        if (!$this->hasParam('sort_field')) {
-            $this->setParam('sort_field', $this->_userStatus);
-        }
-        if (!$this->hasParam('sort_dir')) {
-            $this->setParam('sort_dir', 'd');
-        }
-        parent::browseAction();
+        $response = $this->api()->search('stats', ['type' => Stat::TYPE_DOWNLOAD, 'user_status' => $userStatus]);
+        $this->paginator($response->getTotalResults());
+        $stats = $response->getContent();
+
+        $view = new ViewModel([
+            'resources' => $stats,
+            'stats' => $stats,
+            'userStatus' => $userStatus,
+        ]);
+        return $view
+            ->setTemplate('stats/admin/browse/by-stat');
     }
 
     /**
@@ -108,55 +103,64 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
      */
     public function byFieldAction()
     {
-        $userStatus = $this->_userStatus;
-        $this->setParam('user_status', $userStatus);
+        $userStatus = $this->settings()->get('stats_default_user_status_admin');
 
-        $field = $this->getParam('field');
-        if (empty($field) || !in_array($field, array('referrer', 'query', 'user_agent', 'accept_language'))) {
+        $params = $this->params()->fromQuery();
+
+        $field = $params['field'] ?? null;
+        if (empty($field) || !in_array($field, ['referrer', 'query', 'user_agent', 'accept_language'])) {
             $field = 'referrer';
-            $this->setParam('field', $field);
+            $params['field'] = $field;
         }
 
-        $sortField = $this->getParam('sort_field');
-        if (empty($sortField) || !in_array($sortField, array($field, 'hits'))) {
-            $this->setParam('sort_field', 'hits');
+        $sortBy = $params['sort_by'] ?? null;
+        if (empty($sortBy) || !in_array($sortBy, [$field, 'hits'])) {
+            $sortBy = 'hits';
+            $params['sort_by'] = 'hits';
         }
-        if (!$this->hasParam('sort_dir')) {
-            $this->setParam('sort_dir', 'd');
+        $sortOrder = $params['sort_order'] ?? null;
+        if (empty($sortOrder) || !in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+            $params['sort_order'] = 'desc';
         }
 
-        // Don't use browseAction, because this is a synthesis, not a list of
-        // records (findBy() can't be used)..
-        $this->_browseActionByField();
+        // Don't use api, because this is a synthesis, not a list of resources.
+        $this->browseActionByField($params);
 
-        $totalHits = $this->_helper->db->count(array(
-            'user_status' => $userStatus,
-        ));
+        $totalHits = $this->api()->search('hits', ['user_status' => $userStatus])->getTotalResults();
 
-        $totalNotEmpty = $this->_helper->db->count(array(
-            'field' => $field,
-            'not_empty' => $field,
-            'user_status' => $userStatus,
-        ));
+        // TODO There is a special filter for field "referrer": "NOT LIKE ?", WEB_ROOT . '/%'."
+        $totalNotEmpty = $this->api()->search('hits', ['field' => $field, 'user_status' => $userStatus, 'not_empty' => $field])->getTotalResults();
 
         switch ($field) {
-            case 'referrer': $labelField = __('External Referrers'); break;
-            case 'query': $labelField = __('Queries'); break;
-            case 'user_agent': $labelField = __('Browsers'); break;
-            case 'accept_language': $labelField = __('Accepted Languages'); break;
+            default:
+            case 'referrer':
+                $labelField = $this->translate('External Referrers'); // @translate
+                break;
+            case 'query':
+                $labelField = $this->translate('Queries'); // @translate
+                break;
+            case 'user_agent':
+                $labelField = $this->translate('Browsers'); // @translate
+                break;
+            case 'accept_language':
+                $labelField = $this->translate('Accepted Languages'); // @translate
+                break;
         }
 
-        $this->view->assign(array(
-            'stats_type' => 'field',
+        $view = new ViewModel([
+            'statsType' => 'field',
             'field' => $field,
-            'label_field' => $labelField,
-            'total_hits' => $totalHits,
-            'total_not_empty' => $totalNotEmpty,
-            'user_status' => $userStatus,
-        ));
+            'labelField' => $labelField,
+            'totalHits' => $totalHits,
+            'totalNotEmpty' => $totalNotEmpty,
+            'userStatus' => $userStatus,
+        ]);
+        return $view
+            ->setTemplate('stats/admin/browse/by-field');
     }
 
-    public function byCollectionAction()
+    public function byItemSetAction(): void
     {
         $db = get_db();
 
@@ -167,8 +171,8 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
         if ($year || $month) {
             $sql .= ' FORCE INDEX FOR JOIN (added)';
         }
-        $sql .= " JOIN {$db->Item} items ON (hits.record_id = items.id)";
-        $sql .= ' WHERE hits.record_type = "Item"';
+        $sql .= " JOIN {$db->Item} items ON (hits.resource_id = items.id)";
+        $sql .= ' WHERE hits.resource_type = "Item"';
         if ($year) {
             $sql .= ' AND YEAR(hits.added) = ' . $db->quote($year, Zend_Db::INT_TYPE);
         }
@@ -186,7 +190,7 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
                 if ($hitsInclusive > 0) {
                     $results[] = [
                         'collection' => metadata($collection, ['Dublin Core', 'Title']),
-                        'hits' => isset($hitsPerCollection[$collection->id]) ? $hitsPerCollection[$collection->id] : 0,
+                        'hits' => $hitsPerCollection[$collection->id] ?? 0,
                         'hitsInclusive' => $hitsInclusive,
                     ];
                 }
@@ -202,7 +206,7 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
         }
 
         $sortField = $this->getParam('sort_field');
-        if (empty($sortField) || !in_array($sortField, array('collection', 'hits', 'hitsInclusive'))) {
+        if (empty($sortField) || !in_array($sortField, ['collection', 'hits', 'hitsInclusive'])) {
             $sortField = 'hitsInclusive';
             $this->setParam('sort_field', $sortField);
         }
@@ -228,14 +232,14 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
         $select->order('year desc');
         $years = $db->fetchCol($select);
 
-        $this->view->assign(array(
+        $this->view->assign([
             'hits' => $results,
             'total_results' => count($results),
             'stats_type' => 'collection',
             'years' => $years,
             'yearFilter' => $year,
             'monthFilter' => $month,
-        ));
+        ]);
     }
 
     protected function _getHitsPerCollection($hitsPerCollection, $collectionId)
@@ -246,56 +250,43 @@ class Stats_BrowseController extends Omeka_Controller_AbstractActionController
             $childrenHits += $this->_getHitsPerCollection($hitsPerCollection, $childCollection['id']);
         }
 
-        return (isset($hitsPerCollection[$collectionId]) ? $hitsPerCollection[$collectionId] : 0) + $childrenHits;
+        return ($hitsPerCollection[$collectionId] ?? 0) + $childrenHits;
     }
 
     /**
      * Retrieve and render a set of rows for the controller's model.
      *
-     * @internal Main difference with browseAction() are that values are not
-     * records, but array of synthetic values.
-     *
-     * @see browseAction()
-     *
-     * @uses Omeka_Controller_Action_Helper_Db::getDefaultModelName()
+     * Here, values are not resources, but array of synthetic values.
      */
-    protected function _browseActionByField()
+    protected function browseActionByField(array $params): void
     {
-        // Respect only GET parameters when browsing.
-        $this->getRequest()->setParamSources(array('_GET'));
+        $resourcesPerPage = $this->getBrowseResourcesPerPage();
+        $currentPage = empty($params['page']) ? 1 : (int) $params['page'];
 
-        // Inflect the record type from the model name.
-        $pluralName = $this->view->pluralize($this->_helper->db->getDefaultModelName());
+        $statistic = $this->viewHelpers('statistic');
 
-        $params = $this->getAllParams();
-        $recordsPerPage = $this->_getBrowseRecordsPerPage();
-        $currentPage = $this->getParam('page', 1);
-
-        // Get the records filtered to Omeka_Db_Table::applySearchFilters().
-        $records = $this->_helper->db->getFrequents($params, $recordsPerPage, $currentPage);
-        $totalRecords = $this->_helper->db->countFrequents($params);
+        $resources = $statistic->getFrequents($params, $resourcesPerPage, $currentPage);
+        $totalResources = $statistic->countFrequents($params);
 
         // Add pagination data to the registry. Used by pagination_links().
-        if ($recordsPerPage) {
-            Zend_Registry::set('pagination', array(
+        if ($resourcesPerPage) {
+            Zend_Registry::set('pagination', [
                 'page' => $currentPage,
-                'per_page' => $recordsPerPage,
-                'total_results' => $totalRecords,
-            ));
+                'per_page' => $resourcesPerPage,
+                'total_results' => $totalResources,
+            ]);
         }
 
-        $this->view->assign(array($pluralName => $records, 'total_results' => $totalRecords));
+        $this->view->assign([$pluralName => $resources, 'total_results' => $totalResources]);
     }
 
     /**
      * Use global settings for determining browse page limits.
-     *
-     * @return int
      */
-    protected function _getBrowseRecordsPerPage($pluralName = null)
+    protected function getBrowseResourcesPerPage(): int
     {
-        return is_admin_theme()
-            ? (int) get_option('stats_per_page_admin')
-            : (int) get_option('stats_per_page_public');
+        return $this->status()->isAdminRequest()
+            ? (int) $this->settings()->get('stats_per_page_admin')
+            : (int) $this->settings()->get('stats_per_page_public');
     }
 }
