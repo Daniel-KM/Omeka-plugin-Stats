@@ -342,19 +342,6 @@ class StatRepresentation extends AbstractEntityRepresentation
     }
 
     /**
-     * Get the total count of resources of the current type.
-     *
-     * @param string $userStatus Can be hits (default), anonymous or identified.
-     */
-    public function getTotalOfResources(?string $userStatus = null): int
-    {
-        return $this->adapter->totalOfResources(
-            $this->resource->getEntityName(),
-            $userStatus
-        );
-    }
-
-    /**
      * Helper to get the singular human name of the resource type.
      *
      * @param string $default Return this string if empty, or default if set.
