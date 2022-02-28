@@ -136,9 +136,10 @@ return [
     ],
     'shortcodes' => [
         'invokables' => [
+            'stats' => Shortcode\Stats::class,
             'stats_total' => Shortcode\Stats::class,
             'stats_position' => Shortcode\Stats::class,
-            'stats_viewed' => Shortcode\Stats::class,
+            'stats_vieweds' => Shortcode\Stats::class,
         ],
     ],
     'stats' => [

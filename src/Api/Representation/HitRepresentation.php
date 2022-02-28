@@ -1,592 +1,394 @@
-<?php
+<?php declare(strict_types=1);
 
-/**
- * @package Stats\models
- */
-class Hit extends Omeka_Record_AbstractRecord implements Zend_Acl_Resource_Interface
+namespace Stats\Api\Representation;
+
+use Omeka\Api\Exception\NotFoundException;
+use Omeka\Api\Representation\AbstractEntityRepresentation;
+use Omeka\Api\Representation\AbstractResourceRepresentation;
+use Omeka\Api\Representation\UserRepresentation;
+use Stats\Entity\Stat;
+
+class HitRepresentation extends AbstractEntityRepresentation
 {
-    /**
-     * Url is not the full url, but only the Omeka one: no domain, no specific
-     * path. So `http://www.example.com/omeka/items/show/1` is saved as
-     * `/items/show/1` and home page as `/`.
-     *
-     * @var string
-     */
-    public $url = '';
-
-    /**
-     * The record type when the page is dedicated to a record.
-     *
-     * Only one record is saved by hit, the first one, so this should be the
-     * dedicated page of a record, for example "/items/show/#".
-     *
-     * @var string|null
-     */
-    public $record_type = '';
-
-    /**
-     * The record id when the page is dedicated to a record.
-     *
-     * Only one record is saved by hit, the first one, so this should be the
-     * dedicated page of a record, for example "/items/show/#".
-     *
-     * @var int|null
-     */
-    public $record_id = 0;
-
-    /**
-     * User ID when the page is hit by an identified user.
-     *
-     * @var int
-     */
-    public $user_id = 0;
-
-    /**
-     * Remote ip address. It can be obfuscated or protected.
-     *
-     * @var string
-     */
-    public $ip = '';
-
-    /**
-     * Useful data from client.
-     */
-    public $referrer = '';
-    public $query = '';
-    public $user_agent = '';
-    public $accept_language = '';
-
-    /**
-     * The date this record was added.
-     *
-     * @var string
-     */
-    public $added;
-
-    /**
-     * Record related to this hit, if any..
-     *
-     * @var array
-     */
-    protected $_related = array(
-        'Record' => 'getRecord',
-        'User' => 'getUser',
-        'StatPage' => 'getStatPage',
-        'StatRecord' => 'getStatRecord',
-        'StatDownload' => 'getStatDownload',
-    );
-
-    /**
-     * Non-persistent record object. Contains false if not set and null if
-     * deleted.
-     */
-     private $_record = false;
-
-    /**
-     * Non-persistent stat object for page.
-     */
-     private $_stat_page;
-
-    /**
-     * Non-persistent stat object for record, if any.
-     */
-     private $_stat_record;
-
-    /**
-     * Non-persistent stat object for download, if any.
-     */
-     private $_stat_download;
-
-    /**
-     * Non-persistent request object.
-     */
-     private $_request;
-
-
-    /**
-     * Initialize mixins.
-     */
-    protected function _initializeMixins()
+    public function getControllerName()
     {
-        $this->_mixins[] = new Mixin_Owner($this);
-        $this->_mixins[] = new Mixin_Timestamp($this);
+        return 'hit';
+    }
+
+    public function getJsonLd()
+    {
+        $created = [
+            '@value' => $this->getDateTime($this->created()),
+            '@type' => 'http://www.w3.org/2001/XMLSchema#dateTime',
+        ];
+
+        return [
+            'o:id' => $this->id(),
+            'o:url' => $this->hitUrl(),
+            'o:entity_id' => $this->entityId(),
+            'o:entity_name' => $this->entityName(),
+            'o:user_id' => $this->userId(),
+            'o:ip' => $this->ip(),
+            'o:referrer' => $this->referrer(),
+            'o:query' => $this->query(),
+            'o:user_agent' => $this->userAgent(),
+            'o:accept_language' => $this->acceptLanguage(),
+            'o:created' => $created,
+        ];
+    }
+
+    public function getJsonLdType()
+    {
+        return 'o-module-stats:Hit';
     }
 
     /**
-     * Determine whether or not the page has or had a Record.
+     * Url is not the full url, but only the Omeka one: no domain, no specific
+     * path. So `https://example.org/item/1` is saved as `/item/1` and home
+     * page as `/`.
      *
-     * @return boolean True if hit has a record, even deleted.
+     * Of course, when the files are stored externally, it cannot be an hit here
+     * except in case of a specific management (js or redirect).
      */
-    public function hasRecord()
+    public function hitUrl(): string
     {
-        return (!empty($this->record_type) && !empty($this->record_id));
+        return $this->resource->getUrl();
+    }
+
+    /**
+     * The resource type (api name) when the page is dedicated to a resource.
+     *
+     * Only one resource is saved by hit, the first one, so this should be the
+     * dedicated page of a resource , for example "/item/#xxx".
+     *
+     * The resource may have been removed.
+     */
+    public function entityName(): ?string
+    {
+        return $this->resource->getEntityName() ?: null;
+    }
+
+    /**
+     * The resource id when the page is dedicated to a resource.
+     *
+     * Only one resource is saved by hit, the first one, so this should be the
+     * dedicated page of a resource, for example "/item/#xxx".
+     *
+     * The resource may have been removed.
+     */
+    public function entityId(): ?int
+    {
+        return $this->resource->getEntityId() ?: null;
+    }
+
+    /**
+     * Alias of entityName().
+     *
+     * @see self::entityName().
+     */
+    public function resourceName(): ?string
+    {
+        return $this->resource->getEntityName() ?: null;
+    }
+
+    /**
+     * Alias of entityId().
+     *
+     * @see self::entityId().
+     */
+    public function resourceId(): ?string
+    {
+        return $this->resource->getEntityId() ?: null;
+    }
+
+    /**
+     * User ID when the page is hit by an identified user.
+     */
+    public function userId(): ?int
+    {
+        return $this->resource->getUserId() ?: null;
+    }
+
+    /**
+     * Remote ip address. It can be obfuscated or protected.
+     */
+    public function ip(): ?string
+    {
+        return $this->resource->getIp() ?: null;
+    }
+
+    public function referrer(): ?string
+    {
+        return $this->resource->getReferrer() ?: null;
+    }
+
+    public function query(): ?string
+    {
+        return $this->resource->getQuery() ?: null;
+    }
+
+    public function userAgent(): ?string
+    {
+        return $this->resource->userAgent() ?: null;
+    }
+
+    public function acceptLanguage(): ?string
+    {
+        return $this->resource->acceptLanguage() ?: null;
+    }
+
+    /**
+     * The date this resource was added.
+     */
+    public function created(): \DateTime
+    {
+        return $this->resource->getCreated();
+    }
+
+    /**
+     * Determine whether or not the page has or had a resource.
+     *
+     * @return bool True if hit has a resource, even deleted.
+     */
+    public function hasEntity(): bool
+    {
+        return $this->resource->getEntityName()
+            && $this->resource->getEntityId();
+    }
+
+    /**
+     * Alias of hasEntity().
+     *
+     * @see self::hasEntity().
+     */
+    public function hasResource(): bool
+    {
+        return $this->resource->getEntityName()
+            && $this->resource->getEntityId();
     }
 
     /**
      * Determine whether or not the hit is from a bot/webcrawler
-     *
-     * @return boolean True if hit is from a bot, otherwise False
      */
-    public function isBot()
+    public function isBot(): bool
     {
-        // For dev purpose.
-        // print "<!-- UA : ".$this->user_agent." -->";
-        $crawlers = 'bot|crawler|slurp|spider|check_http';
-        return (bool) preg_match("~$crawlers~", (string) $this->user_agent);
+        return $this->adapter->isBot($this->resource->getUserAgent());
     }
-
 
     /**
      * Determine whether or not the hit is a direct download.
      *
-     * @return boolean True if hit has a record, even deleted.
+     * Of course, only files stored locally can be hit.
+     * @todo Manage a specific path.
+     *
+     * @return bool True if hit has a resource, even deleted.
      */
-    public function isDownload()
+    public function isDownload(): bool
     {
-        return (strpos($this->url, '/files/original/') === 0) || (strpos($this->url, '/files/fullsize/') === 0);
+        $url = $this->resource->getUrl();
+        return strpos($url, '/files/original/') === 0
+            || strpos($url, '/files/large/') === 0
+            // For migration from Omeka Classic.
+            || strpos($url, '/files/fullsize/') === 0;
     }
 
     /**
-     * Get the record object if any (and not deleted).
-     *
-     * @return Record|null
+     * Get the resource object if any and not deleted.
      */
-    public function getRecord()
+    public function entityResource(): ?AbstractResourceRepresentation
     {
-        return $this->getStat()->getRecord();
+        $name = $this->resource->getEntityName();
+        $id = $this->resource->getEntityId();
+        if (empty($name) || empty($id)) {
+            return null;
+        }
+        try {
+            $adapter = $this->getAdapter($name);
+            $entity = $adapter->findEntity(['id' => $id]);
+            return $adapter->getRepresentation($entity);
+        } catch (NotFoundException $e) {
+            return null;
+        }
     }
 
     /**
-     * Get the user object if any.
-     *
-     * @return User|null
+     * Get the user object if any and not deleted.
      */
-    public function getUser()
+    public function user(): ?UserRepresentation
     {
-        if ($this->user_id) {
-            return $this->getTable('User')->find($this->user_id);
+        $id = $this->resource->getUserId() ?: null;
+        if (empty($id)) {
+            return null;
+        }
+        try {
+            $adapter = $this->getAdapter('users');
+            $entity = $adapter->findEntity(['id' => $id]);
+            return $adapter->getRepresentation($entity);
+        } catch (NotFoundException $e) {
+            return null;
         }
     }
 
     /**
      * Get the stat object.
      *
-     * @param string $type "page" or "record".
-     *
-     * @return Stat
+     * @param string $type "page" or "resource" or "download".
      */
-    public function getStat($type = 'page')
+    public function stat(string $type = Stat::TYPE_PAGE): ?StatRepresentation
     {
         switch ($type) {
-            case 'record': return $this->getStatRecord();
-            case 'download': return $this->getStatDownload();
-            default: return $this->getStatRecord();
+            case STAT::TYPE_RESOURCE:
+                return $this->statResource();
+            case STAT::TYPE_DOWNLOAD:
+                return $this->statDownload();
+            case STAT::TYPE_PAGE:
+            default:
+                return $this->statPage();
         }
     }
 
     /**
-     * Get the stat object for page.
-     *
-     * @return Stat
+     * Get the stat object for page. This is the default, so don't check "page".
      */
-    public function getStatPage()
+    public function statPage(): ?StatRepresentation
     {
-        if (empty($this->_stat_page)) {
-            $this->_stat_page = $this->getTable('Stat')->findByUrl($this->url);
-            // Create a new stat for the case a stat doesn't exist.
-            // Hit is counted only when hit is saved.
-            if (empty($this->_stat_page)) {
-                $this->_stat_page = $this->_setStat('page');
-            }
+        // It is useless to store the stat, since it is called one time only in
+        // all the real world cases and by doctrine anyway.
+        try {
+            // This is the default stat, so check url only, not the type.
+            $adapter = $this->getAdapter('stats');
+            $entity = $adapter->findEntity(['url' => $this->resource->getUrl()]);
+            return $adapter->getRepresentation($entity);
+        } catch (NotFoundException $e) {
+            return null;
         }
-        return $this->_stat_page;
     }
 
     /**
-     * Get the stat object of the record.
-     *
-     * @return Stat
+     * Get the stat object of the resource.
      */
-    public function getStatRecord()
+    public function statResource(): ?StatRepresentation
     {
-        if ($this->hasRecord()) {
-            if (empty($this->_stat_record)) {
-                $this->_stat_record = $this->getTable('Stat')->findByRecord(
-                    array('record_type' => $this->record_type, 'record_id' => $this->record_id));
-                // Create a new stat for the case a stat doesn't exist.
-                // Hit is counted only when hit is saved.
-                if (empty($this->_stat_record)) {
-                    $this->_stat_record = $this->_setStat('record');
-                }
+        // It is useless to store the stat, since it is called one time only in
+        // all the real world cases and by doctrine anyway.
+        $name = $this->resource->getEntityName();
+        $id = $this->resource->getEntityId();
+        if ($name && $id) {
+            try {
+                $adapter = $this->getAdapter('stats');
+                $entity = $adapter->findEntity(['entityName' => $name, 'entityId' => $id]);
+                return $adapter->getRepresentation($entity);
+            } catch (NotFoundException $e) {
+                return null;
             }
-            return $this->_stat_record;
         }
+        return null;
     }
 
     /**
      * Get the stat object of the download.
-     *
-     * @return Stat
      */
-    public function getStatDownload()
+    public function statDownload(): ?StatRepresentation
     {
+        // It is useless to store the stat, since it is called one time only in
+        // all the real world cases and by doctrine anyway.
         if ($this->isDownload()) {
-            if (empty($this->_stat_download)) {
-                $this->_stat_download = $this->getTable('Stat')->findByDownload($this->url);
-                // Create a new stat for the case a stat doesn't exist.
-                // Hit is counted only when hit is saved.
-                if (empty($this->_stat_download)) {
-                    $this->_stat_download = $this->_setStat('download');
-                }
+            try {
+                $adapter = $this->getAdapter('stats');
+                $entity = $adapter->findEntity([
+                    'type' => STAT::TYPE_DOWNLOAD,
+                    'url' => $this->resource->getUrl(),
+                ]);
+                return $adapter->getRepresentation($entity);
+            } catch (NotFoundException $e) {
+                return null;
             }
-            return $this->_stat_download;
         }
+        return null;
     }
 
     /**
-     * Get the count of hits of the page.
+     * Get the count of hits of the page (shortcut to stat).
      *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
+     * @param string $userStatus Can be hits (default), anonymous or identified.
      */
-    public function getTotalPage($userStatus = null)
+    public function totalPage(?string $userStatus = null): int
     {
-        return $this->getStatPage()->getTotalPage($userStatus);
+        return $this->statPage()->totalPage($userStatus);
     }
 
     /**
-     * Get the count of hits of the record, if any.
+     * Get the count of hits of the resource, if any.
      *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
+     * @param string $userStatus Can be hits (default), anonymous or identified.
      */
-    public function getTotalRecord($userStatus = null)
+    public function totalResource(?string $userStatus = null): int
     {
-        return $this->getStatRecord()->getTotalRecord($userStatus);
+        $stat = $this->statResource();
+        return $stat
+            ? $stat->totalResource($userStatus)
+            : 0;
     }
 
     /**
-     * Get the count of hits of the record type, if any.
+     * Get the count of hits of the resource type, if any.
      *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
+     * @param string $userStatus Can be hits (default), anonymous or identified.
      */
-    public function getTotalRecordType($userStatus = null)
+    public function totalResourceType(?string $userStatus = null): int
     {
-        return $this->getStatRecord()->getTotalRecordType($userStatus);
+        return $this->getAdapter('stats')->totalResourceType(
+            $this->resource->getEntityName(),
+            $userStatus
+        );
     }
 
     /**
-     * Get the count of hits of the record, if any.
+     * Get the count of hits of the downloaded resource, if any.
      *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
+     * @param string $userStatus Can be hits (default), anonymous or identified.
      */
-    public function getTotalDownload($userStatus = null)
+    public function totalDownload(?string $userStatus = null): int
     {
-        return $this->getStatDownload()->getTotalDownload($userStatus);
-    }
-
-    /**
-     * Get the position of the page in the most viewed.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getPositionPage($userStatus = null)
-    {
-        return $this->getStatPage()->getPositionPage($userStatus = null);
+        $stat = $this->statDownload();
+        return $stat
+            ? $stat->totalDownload($userStatus)
+            : 0;
     }
 
     /**
      * Get the position of the page in the most viewed.
      *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
+     * @param string $userStatus Can be hits (default), anonymous or identified.
      */
-    public function getPositionRecord($userStatus = null)
+    public function positionPage(?string $userStatus = null): int
     {
-        return $this->getStatRecord()->getPositionRecord($userStatus = null);
+        return $this->statPage()->positionPage($userStatus);
+    }
+
+    /**
+     * Get the position of the page in the most viewed.
+     *
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     */
+    public function positionResource(?string $userStatus = null): int
+    {
+        $stat = $this->statResource();
+        return $stat
+            ? $stat->positionResource($userStatus)
+            : 0;
     }
 
     /**
      * Get the position of the direct download in the most viewed.
      *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
+     * @param string $userStatus Can be hits (default), anonymous or identified.
      */
-    public function getPositionDownload($userStatus = null)
+    public function positionDownload(?string $userStatus = null): int
     {
-        return $this->getStatDownload()->getPositionDownload($userStatus = null);
-    }
-
-    /**
-     * Get a property about the record for display purposes.
-     *
-     * @param string $property Property to get. Always lowercase.
-     * @return mixed
-     */
-    public function getProperty($property)
-    {
-        switch($property) {
-            case 'record':
-                return $this->getRecord();
-            case 'user':
-                return $this->getUser();
-            case 'stat':
-            case 'stat_page':
-                return $this->getStatPage();
-            case 'stat_record':
-                return $this->getStatRecord();
-            case 'stat_download':
-                return $this->getStatDownload();
-            case 'total':
-            case 'total_page':
-                return $this->getTotalPage();
-            case 'total_record':
-                return $this->getTotalRecord();
-            case 'total_download':
-                return $this->getTotalDownload();
-            case 'record_deleted':
-                return $this->hasRecord() ? (bool) $this->getRecord() : null;
-            default:
-                return parent::getProperty($property);
-        }
-    }
-
-    /**
-     * Identify Item records as relating to the Items ACL resource.
-     *
-     * Required by Zend_Acl_Resource_Interface.
-     *
-     * @return string
-     */
-    public function getResourceId()
-    {
-        return 'Hits';
-    }
-
-    /**
-     * Set record type and record id of the hit.
-     *
-     * Only one record is saved by hit, the first one, so this should be the
-     * dedicated page of a record, for example "/items/show/#".
-     *
-     * @param Record $record
-     */
-    public function setRecord($record)
-    {
-        $this->record_type = get_class($record);
-        $this->record_id = $record->id;
-    }
-
-    /**
-     * Set current viewed page.
-     */
-    public function setCurrentHit()
-    {
-        $this->setCurrentRequest();
-        $this->setCurrentUrl();
-        $this->setCurrentRecord();
-        $this->setCurrentUser();
-    }
-
-    /**
-     * Set current request.
-     */
-    public function setCurrentRequest()
-    {
-        $request = $this->_getRequest();
-        $this->ip = (string) $this->_getRemoteIP();
-        $this->referrer = (string) $request->getServer('HTTP_REFERER');
-        $this->query = (string) $request->getServer('QUERY_STRING');
-        $this->user_agent = (string) $request->getServer('HTTP_USER_AGENT');
-        $this->accept_language = (string) $request->getServer('HTTP_ACCEPT_LANGUAGE');
-    }
-
-    /**
-     * Set current url (only omeka part).
-     */
-    public function setCurrentUrl()
-    {
-        $this->url = $this->_getRequest()->getPathInfo();
-    }
-
-    /**
-     * Set current record of the hit if any.
-     *
-     * Only one record is saved by hit, the first one, so this should be the
-     * dedicated page of a record, for example "/items/show/#".
-     */
-    public function setCurrentRecord()
-    {
-        $params = $this->_getRequest()->getParams();
-
-        $records = apply_filters('stats_record', array(), $params);
-
-        $record = reset($records);
-        if ($record) {
-            $this->setRecord($record);
-        }
-    }
-
-    /**
-     * Set current user.
-     *
-     * @param Object $request
-     */
-    public function setCurrentUser()
-    {
-        $user = current_user();
-        $this->user_id = is_object($user) ? $user->id : 0;
-    }
-
-    /**
-     * Set stat.
-     *
-     * @param string $type "page", "record" or "download".
-     */
-    public function _setStat($type = 'page')
-    {
-        $stat = new Stat;
-        $stat->type = in_array($type, array('page', 'record', 'download')) ? $type : 'page';
-        $stat->setDataFromHit($this);
-        $stat->save();
-        return $stat;
-    }
-
-    /**
-     * Before-save hook.
-     *
-     * @param array $args
-     */
-    public function beforeSave($args)
-    {
-        $this->_cleanUrl();
-    }
-
-    /**
-     * After-save hook.
-     *
-     * @param array $args
-     */
-    public function afterSave($args)
-    {
-        if ($args['insert']) {
-            // Stat is created and filled via getStat() if not exists.
-            // "page" and "download" are mutually exclusive.
-            $stat = $this->isDownload()
-                 ? $this->getStatDownload()
-                 : $this->getStatPage();
-            $stat->increaseHits();
-            $stat->save();
-            // A second stat is needed to manage record count.
-            if ($this->hasRecord()) {
-                $stat = $this->getStatRecord();
-                $stat->increaseHits();
-                $stat->save();
-            }
-        }
-    }
-
-    /**
-     * Get remote ip address. This check respects privacy settings.
-     *
-     * @return string
-     */
-    protected function _getRemoteIP()
-    {
-        $privacy = get_option('stats_privacy');
-        if ($privacy == 'anonymous') {
-            return '';
-        }
-
-        // Check if user is behind nginx.
-        $server = $this->_getRequest()->getServer();
-        $ip = isset($server['HTTP_X_REAL_IP'])
-            ? $server['HTTP_X_REAL_IP']
-            : $server['REMOTE_ADDR'];
-
-        switch ($privacy) {
-            case 'clear': return $ip;
-            case 'hashed': return md5($ip);
-            case 'partial_3':
-                $partial = explode('.', $ip);
-                if (isset($partial[3])) {
-                    unset($partial[3]);
-                }
-                return implode('.', $partial);
-            case 'partial_2':
-                $partial = explode('.', $ip);
-                if (isset($partial[3])) {
-                    unset($partial[3]);
-                    unset($partial[2]);
-                }
-                return implode('.', $partial);
-            case 'partial_3':
-                $partial = explode('.', $ip);
-                if (isset($partial[3])) {
-                    unset($partial[3]);
-                    unset($partial[2]);
-                    unset($partial[1]);
-                }
-                return implode('.', $partial);
-        }
-    }
-
-    /**
-     * Helper to check if the url is an Omeka one and to simplify it before
-     * save.
-     *
-     * This is needed when setCurrentUrl() is not used.
-     */
-    protected function _cleanUrl()
-    {
-        defined('WEB_RELATIVE') || define('WEB_RELATIVE', parse_url(WEB_ROOT, PHP_URL_PATH));
-        // Keep only path to remove domain and query.
-        $url = parse_url($this->url, PHP_URL_PATH);
-        // Remove relative path if any.
-        if (strpos($url, WEB_RELATIVE) === 0) {
-            $url = substr($url, strlen(WEB_RELATIVE));
-        }
-        // Set "/" if empty.
-        $this->url = empty($url) ? '/': $url;
-    }
-
-    /**
-     * Simple validation.
-     */
-    protected function _validate()
-    {
-        if (empty($this->url)) {
-            $this->addError('url', __('Url is required.'));
-        }
-    }
-
-    /**
-     * Get request.
-     *
-     * @return Request
-     */
-    private function _getRequest()
-    {
-         if (empty($this->_request)) {
-            $this->_request = Zend_Controller_Front::getInstance()->getRequest();
-         }
-         return $this->_request;
+        $stat = $this->statDownload();
+        return $stat
+            ? $stat->positionDownload($userStatus)
+            : 0 ;
     }
 }

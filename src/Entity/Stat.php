@@ -1,395 +1,271 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Stats\Entity;
+
+use DateTime;
+use Omeka\Entity\AbstractEntity;
 
 /**
  * Stat synthetises data from Hits.
- *
  * This is a simple cache used to store main stats about a page or a record.
+ * Properties are not nullable to speed up requests.
  *
- * @package Stats\models
+ * Three types of stats exists: pages, resources and direct downloads.
+ * A hit creates or increases values of the stat with the specified url. If this
+ * page is dedicated to a resource, a second stat is created or increased for
+ * this resource. If the url is a direct download one, another stat is created
+ * or increased.
+ *
+ * @todo Replace the one to two Stats by one (only add columns hits_resource, hits_download (all or identified), so 4 columns (and remove hits_identified).
+ *
+ * @todo Remove column hits_identified (= hits - hits_anonymous).
+ *
+ * @Entity
+ * @Table(
+ *     uniqueConstraints={
+ *         @UniqueConstraint(columns={"type", "url"})
+ *     },
+ *     indexes={
+ *         @Index(columns={"type"}),
+ *         @Index(columns={"url"}),
+ *         @Index(columns={"entity_id"}),
+ *         @Index(columns={"entity_name"}),
+ *         @Index(columns={"entity_id", "entity_name"}),
+ *         @Index(columns={"created"}),
+ *         @Index(columns={"modified"})
+ *     }
+ * )
  */
-class Stat extends Omeka_Record_AbstractRecord
+class Stat extends AbstractEntity
 {
-    /**
-     * Three types of stats exists: pages, records and direct downloads.
-     * A hit creates or increases values of the stat with the specified url. If
-     * this page is dedicated to a record, a second stat is created or increased
-     * for the record. If the url is a direct download one, another stat is
-     * created or increased.
-     * Stats should be created only by Hit (no check is done here).
+    /**#@+
+     * Stat types.
      *
+     * @todo Remove types and merge stats.
+     */
+    const TYPE_PAGE = 'page'; // @translate
+    const TYPE_RESOURCE = 'resource'; // @translate
+    const TYPE_DOWNLOAD = 'download'; // @translate
+    /**#@-*/
+
+    /**
+     * @var int
+     * @Id
+     * @Column(
+     *     type="integer"
+     * )
+     * @GeneratedValue
+     */
+    protected $id;
+
+    /**
      * @var string
+     *
+     * @Column(
+     *     type="string",
+     *     length=8,
+     *     nullable=false
+     * )
      */
-    public $type = '';
+    protected $type;
 
     /**
-     * Url is not the full url, but only the Omeka one: no domain, no specific
-     * path. So `http://www.example.com/omeka/items/show/1` is saved as
-     * `/items/show/1` and home page as `/`. For downloads, url stats with
-     * "/files/original/" or "/files/fullsize/".
-     *
      * @var string
+     *
+     * In Omeka S, a url may be very long: site name, page name, file name, etc.
+     * Furthermore, some identifiers are case sensitive. And they need to be
+     * indexed. So the choice of the length and the collation.
+     *
+     * @Column(
+     *     type="string",
+     *     length=1024,
+     *     nullable=false,
+     *     options={
+     *         "collation": "latin1_bin"
+     *     }
+     * )
      */
-    public $url = '';
+    protected $url;
 
     /**
-     * The record type when the page is dedicated to a record.
+     * API resource id (not necessarily an Omeka main Resource).
      *
-     * Only one record is saved by hit, the first one, so this should be the
-     * dedicated page of a record, for example "/items/show/#".
+     * @var int
      *
-     * @var string|null
+     * @Column(
+     *     type="integer",
+     *     nullable=false
+     * )
      */
-    public $record_type = '';
+    protected $entityId = 0;
 
     /**
-     * The record id when the page is dedicated to a record.
-     *
-     * Only one record is saved by hit, the first one, so this should be the
-     * dedicated page of a record, for example "/items/show/#".
-     *
-     * @var int|null
-     */
-    public $record_id = 0;
+     * API resource name (not necessarily an Omeka main Resource).
 
-    /**
-     * Total hit of this url.
-     *
-     * @var integer
-     */
-    public $hits = 0;
-
-    /**
-     * Total hit of this url by an anonymous visitor.
-     *
-     * @var integer
-     */
-    public $hits_anonymous = 0;
-
-    /**
-     * Total hit of this url by an identified user.
-     *
-     * @var integer
-     */
-    public $hits_identified = 0;
-
-    /**
-     * The date this record was added.
-     *
      * @var string
-     */
-    public $added;
-
-    /**
-     * The date this record was added.
      *
-     * @var string
+     * @Column(
+     *     type="string",
+     *     length=190,
+     *     nullable=false
+     * )
      */
-    public $modified;
+    protected $entityName = '';
 
     /**
-     * Records related to a stat.
+     * @var int
      *
-     * @var array
+     * @Column(
+     *     type="integer",
+     *     nullable=false,
+     *     name="hits"
+     * )
      */
-    protected $_related = array(
-        'Record' => 'getRecord',
-    );
+    protected $totalHits = 0;
 
     /**
-     * Non-persistent record object. Contains false if not set and null if
-     * deleted.
+     * @var int
+     *
+     * @Column(
+     *     type="integer",
+     *     nullable=false,
+     *     name="hits_anonymous"
+     * )
      */
-     private $_record = false;
+    protected $totalHitsAnonymous = 0;
 
     /**
-     * Initialize mixins.
+     * @var int
+     *
+     * @Column(
+     *     type="integer",
+     *     nullable=false,
+     *     name="hits_identified"
+     * )
      */
-    protected function _initializeMixins()
+    protected $totalHitsIdentified = 0;
+
+    /**
+     * @var DateTime
+     *
+     * @Column(
+     *      type="datetime",
+     *      nullable=false
+     * )
+     */
+    protected $created;
+
+    /**
+     * @var DateTime
+     *
+     * @Column(
+     *      type="datetime",
+     *      nullable=false
+     * )
+     */
+    protected $modified;
+
+    public function getId()
     {
-        // Mysql < 5.6 can't set two current timestamps, so a mixin is added.
-        $this->_mixins[] = new Mixin_Timestamp($this);
+        return $this->id;
     }
 
-    /**
-     * Determine whether or not the page has or had a Record.
-     *
-     * @return boolean True if hit has a record, even deleted.
-     */
-    public function hasRecord()
+    public function setType(?string $type): self
     {
-        return (!empty($this->record_type) && !empty($this->record_id));
+        $this->type = (string) $type;
+        return $this;
     }
 
-    /**
-     * Get the record object if any (and not deleted).
-     *
-     * @return Record|null
-     */
-    public function getRecord()
+    public function getType(): string
     {
-        if ($this->_record === false) {
-            $this->_record = $this->hasRecord()
-                    // Manage the case where record type has been removed.
-                    && class_exists($this->record_type)
-                ? $this->getTable($this->record_type)->find($this->record_id)
-                : null;
-        }
-        return $this->_record;
+        return $this->type;
     }
 
-    /**
-     * Get the specified count of hits of the current type.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getTotal($userStatus = null)
+    public function setUrl(string $url): self
     {
-        switch ($this->type) {
-            case 'page': return $this->getTotalPage($userStatus);
-            case 'record': return $this->getTotalRecord($userStatus);
-            case 'download': return $this->getTotalDownload($userStatus);
-        }
+        $this->url = $url;
+        return $this;
     }
 
-    /**
-     * Get the specified count of hits of the current page.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getTotalPage($userStatus = null)
+    public function getUrl(): string
     {
-        $userStatus = $this->_checkUserStatus($userStatus);
-        return $this->$userStatus;
+        return $this->url;
     }
 
-    /**
-     * Get the specified count of hits for the current record, if any.
-     *
-     * The total of records may be different from the total hits in case of
-     * multiple urls for the same record.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer|null
-     */
-    public function getTotalRecord($userStatus = null)
+    public function setEntityId(?int $entityId): self
     {
-        switch ($this->type) {
-            // If type is "record", no sql is needed.
-            case 'record':
-                $userStatus = $this->_checkUserStatus($userStatus);
-                return $this->$userStatus;
-            case 'page':
-            case 'download':
-                if ($this->hasRecord()) {
-                    $record = array();
-                    $record['record_type'] = $this->record_type;
-                    $record['record_id'] = $this->record_id;
-                    return $this->getTable('Stat')->getTotalRecord($record, $userStatus);
-                }
-                break;
-        }
+        $this->entityId = (int) $entityId;
+        return $this;
     }
 
-    /**
-     * Get the specified count of hits for the current record type, if any.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer|null
-     */
-    public function getTotalRecordType($userStatus = null)
+    public function getEntityId(): int
     {
-        if ($this->hasRecord()) {
-            return $this->getTable('Stat')->getTotalRecordType($this->record_type, $userStatus);
-        }
+        return $this->entityId;
     }
 
-    /**
-     * Get the specified count of hits of the current download.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getTotalDownload($userStatus = null)
+    public function setEntityName(?string $entityName): self
     {
-        $userStatus = $this->_checkUserStatus($userStatus);
-        return $this->$userStatus;
+        $this->entityName = (string) $entityName;
+        return $this;
     }
 
-    /**
-     * Get the specified position of the current type.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getPosition($userStatus = null)
+    public function getEntityName(): string
     {
-        switch ($this->type) {
-            case 'page': return $this->getPositionPage($userStatus);
-            case 'record': return $this->getPositionRecord($userStatus);
-            case 'download': return $this->getPositionDownload($userStatus);
-        }
+        return $this->entityName;
     }
 
-    /**
-     * Get the position of the page.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getPositionPage($userStatus = null)
+    public function setTotalHits(?int $totalHits): self
     {
-        return $this->getTable('Stat')->getPositionPage($this->url, $userStatus);
+        $this->totalHits = (int) $totalHits;
+        return $this;
     }
 
-    /**
-     * Get the position of the record.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getPositionRecord($userStatus = null)
+    public function getTotalHits(): int
     {
-        $record = array();
-        $record['record_type'] = $this->record_type;
-        $record['record_id'] = $this->record_id;
-        return $this->getTable('Stat')->getPositionRecord($record, $userStatus);
+        return $this->totalHits;
     }
 
-    /**
-     * Get the position of the download.
-     *
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     *
-     * @return integer
-     */
-    public function getPositionDownload($userStatus = null)
+    public function setTotalHitsAnonymous(?int $totalHitsAnonymous): self
     {
-        return $this->getTable('Stat')->getPositionDownload($this->url, $userStatus);
+        $this->totalHitsAnonymous = (int) $totalHitsAnonymous;
+        return $this;
     }
 
-    /**
-     * Get the total count of records of the current type.
-     *
-     * @return integer
-     */
-    public function getTotalOfRecords()
+    public function getTotalHitsAnonymous(): int
     {
-        if ($this->hasRecord()) {
-            return total_records($this->record_type);
-        }
+        return $this->totalHitsAnonymous;
     }
 
-    /**
-     * Helper to get the human name of the record type.
-     *
-     * @param string $defaultEmpty Return this string if empty
-     *
-     * @return string
-     */
-     public function getHumanRecordType($defaultEmpty = '')
-     {
-        return get_view()->stats()->human_record_type($this->record_type, $defaultEmpty);
-     }
-
-    /**
-     * Get a property about the record for display purposes.
-     *
-     * @param string $property Property to get. Always lowercase.
-     * @return mixed
-     */
-    public function getProperty($property)
+    public function setTotalHitsIdentified(?int $totalHitsIdentified): self
     {
-        switch($property) {
-            case 'record':
-                return $this->getRecord();
-            case 'hits':
-            case 'total':
-                return $this->hits;
-            case 'identified':
-            case 'hits_identified':
-                return $this->hits_identified;
-            case 'anonymous':
-            case 'hits_anonymous':
-                return $this->hits_anonymous;
-            default:
-                return parent::getProperty($property);
-        }
+        $this->totalHitsIdentified = (int) $totalHitsIdentified;
+        return $this;
     }
 
-    /**
-     * Initialize values from a Hit.
-     */
-     public function setDataFromHit(Hit $hit)
-     {
-         $this->url = $hit->url;
-         $this->record_type = $hit->record_type;
-         $this->record_id = $hit->record_id;
-     }
-
-    /**
-     * Increase total and identified hits.
-     */
-    public function increaseHits()
+    public function getTotalHitsIdentified(): int
     {
-        $this->hits++;
-        if (current_user()) {
-            $this->hits_identified++;
-        }
-        else {
-            $this->hits_anonymous++;
-        }
+        return $this->totalHitsIdentified;
     }
 
-    /**
-     * Simple validation.
-     */
-    protected function _validate()
+    public function setCreated(DateTime $created): self
     {
-        if (empty($this->type) || !in_array($this->type, array('page', 'record', 'download'))) {
-            $this->addError('type', __('Type should be "page" or "record".'));
-        }
+        $this->created = $created;
+        return $this;
     }
 
-    /**
-     * Helper to check and get column name for user status ('hits' by default).
-     *
-     * @internal Recommended user status are 'hits', 'hits_anonymous' and
-     * 'hits_identified', but specific methods of this class allow 'anonymous'
-     * and 'identified' too. Don't use them in generic functions.
-     *
-     * @param string $userStatus
-     *
-     * @return string
-     */
-    private function _checkUserStatus($userStatus)
+    public function getCreated(): DateTime
     {
-        switch($userStatus) {
-            case 'anonymous':
-            case 'hits_anonymous':
-                return 'hits_anonymous';
-            case 'identified':
-            case 'hits_identified':
-                return 'hits_identified';
-        }
-        return 'hits';
-     }
+        return $this->created;
+    }
+
+    public function setModified(DateTime $modified): self
+    {
+        $this->modified = $modified;
+        return $this;
+    }
+
+    public function getModified(): DateTime
+    {
+        return $this->modified;
+    }
 }

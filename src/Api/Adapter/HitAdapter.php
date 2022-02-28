@@ -1,14 +1,644 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Stats\Api\Adapter;
+
+use DateTime;
+use Doctrine\ORM\QueryBuilder;
+use Laminas\EventManager\Event;
+use Omeka\Api\Adapter\AbstractEntityAdapter;
+use Omeka\Api\Request;
+use Omeka\Entity\EntityInterface;
+use Omeka\Entity\User;
+use Omeka\Stdlib\ErrorStore;
+use Stats\Api\Representation\HitRepresentation;
+use Stats\Api\Representation\StatRepresentation;
+use Stats\Entity\Hit;
+use Stats\Entity\Stat;
+use Omeka\Api\Representation\AbstractRepresentation;
+use Omeka\Entity\AbstractEntity;
 
 /**
  * The Hit table.
  *
  * Get stats about hits. Generally, it's quicker to use the Stat table.
- *
- * @package Hit\models\Table
  */
-class Table_Hit extends Omeka_Db_Table
+class HitAdapter extends AbstractEntityAdapter
 {
+    protected $sortFields = [
+        'id' => 'id',
+        'url' => 'url',
+        'entity_name' => 'entityName',
+        'entity_id' => 'entityId',
+        'ip' => 'ip',
+        'referrer' => 'referrer',
+        'user_agent' => 'userAgent',
+        'accept_language' => 'acceptLanguage',
+        'created' => 'created',
+    ];
+
+    public function getResourceName()
+    {
+        return 'hits';
+    }
+
+    public function getEntityClass()
+    {
+        return Hit::class;
+    }
+
+    public function getRepresentationClass()
+    {
+        return HitRepresentation::class;
+    }
+
+    public function buildQuery(QueryBuilder $qb, array $query): void
+    {
+        $expr = $qb->expr();
+
+        if (isset($query['url'])) {
+            if (is_array($query['url'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.url',
+                    $this->createNamedParameter($qb, $query['url'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.url',
+                    $this->createNamedParameter($qb, $query['url'])
+                ));
+            }
+        }
+
+        if (isset($query['entity_name'])) {
+            if (is_array($query['entity_name'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.entityName',
+                    $this->createNamedParameter($qb, $query['entity_name'])
+                    ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.entityName',
+                    $this->createNamedParameter($qb, $query['entity_name'])
+                ));
+            }
+        }
+
+        if (isset($query['entity_id'])) {
+            if (is_array($query['entity_id'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.entityId',
+                    $this->createNamedParameter($qb, $query['entity_id'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.entityId',
+                    $this->createNamedParameter($qb, $query['entity_id'])
+                ));
+            }
+        }
+
+        if (isset($query['has_entity']) && $query['has_entity'] !== '') {
+            if ($query['has_entity']) {
+                $qb->andWhere($expr->neq(
+                    'omeka_root.entityId',
+                    $this->createNamedParameter($qb, '0')
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.entityId',
+                    $this->createNamedParameter($qb, '0')
+                ));
+            }
+        }
+
+        if (isset($query['user_id'])) {
+            if (is_array($query['user_id'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.userId',
+                    $this->createNamedParameter($qb, $query['user_id'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.userId',
+                    $this->createNamedParameter($qb, $query['user_id'])
+                ));
+            }
+        }
+
+        if (isset($query['user_status'])
+            && in_array($query['user_status'], ['identified', 'anonymous'])
+        ) {
+            if ($query['user_status'] === 'identified') {
+                $qb->andWhere($expr->neq(
+                    'omeka_root.userId',
+                    $this->createNamedParameter($qb, 0)
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.userId',
+                    $this->createNamedParameter($qb, 0)
+                ));
+            }
+        }
+
+        if (isset($query['is_download']) && $query['is_download'] !== '') {
+            if ($query['is_download']) {
+                $qb->andWhere($expr->like(
+                    'omeka_root.url',
+                    $this->createNamedParameter($qb, '/files/original/%')
+                ));
+            } else {
+                $qb->andWhere($expr->notLike(
+                    'omeka_root.url',
+                    $this->createNamedParameter($qb, '/files/original/%')
+                ));
+            }
+        }
+
+        if (isset($query['ip'])) {
+            if (is_array($query['ip'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.ip',
+                    $this->createNamedParameter($qb, $query['ip'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.ip',
+                    $this->createNamedParameter($qb, $query['ip'])
+                ));
+            }
+        }
+
+        // TODO There is a special filter for field "referrer": "NOT LIKE ?", WEB_ROOT . '/%'." (it allows to get external referrer only).
+        if (isset($query['referrer'])) {
+            if (is_array($query['referrer'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.referrer',
+                    $this->createNamedParameter($qb, $query['referrer'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.referrer',
+                    $this->createNamedParameter($qb, $query['referrer'])
+                ));
+            }
+        }
+
+        if (isset($query['user_agent'])) {
+            if (is_array($query['user_agent'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.userAgent',
+                    $this->createNamedParameter($qb, $query['user_agent'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.userAgent',
+                    $this->createNamedParameter($qb, $query['user_agent'])
+                ));
+            }
+        }
+
+        if (isset($query['accept_language'])) {
+            if (is_array($query['accept_language'])) {
+                $qb->andWhere($expr->in(
+                    'omeka_root.acceptLanguage',
+                    $this->createNamedParameter($qb, $query['accept_language'])
+                ));
+            } else {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.acceptLanguage',
+                    $this->createNamedParameter($qb, $query['accept_language'])
+                ));
+            }
+        }
+
+        if (isset($query['not_empty'])
+            && in_array($query['not_empty'], ['referrer', 'query', 'user_agent', 'accept_language'])
+        ) {
+            $columns = [
+                'referrer' => 'referrer',
+                'query' => 'query',
+                'user_agent' => 'userAgent',
+                'accept_language' => 'acceptLanguage',
+            ];
+            $qb->andWhere($expr->neq(
+                'omeka_root.' . $columns[$query['not_empty']],
+                $this->createNamedParameter($qb, '')
+            ));
+        }
+    }
+
+    /**
+     * No need to validate: missing data are taken from current request.
+     * @see \Omeka\Api\Adapter\AbstractEntityAdapter::validateRequest()
+     *
+     * {@inheritDoc}
+     */
+    public function hydrate(Request $request, EntityInterface $entity, ErrorStore $errorStore): void
+    {
+        /** @var \Stats\Entity\Hit $entity */
+        // A hit cannot be updated here: it's a static resource.
+        if (Request::UPDATE === $request->getOperation()) {
+            return;
+        }
+
+        $data = $request->getContent();
+        $data = $this->fillHit($data);
+
+        // This is quicker than using inflector.
+        $keyMethods = [
+            // Since it is a creation, id is set automatically.
+            // 'o:id' => 'setId',
+            'o:url' => 'setUrl',
+            'o:entity_id' => 'setEntityId',
+            'o:entity_name' => 'setEntityName',
+            'o:user_id' => 'setUserId',
+            'o:ip' => 'setIp',
+            'o:referrer' => 'setReferrer',
+            'o:query' => 'setQuery',
+            'o:user_agent' => 'setUserAgent',
+            'o:accept_language' => 'setAcceptLanguage',
+            // 'o:created' => 'setCreated',
+        ];
+        foreach ($data as $key => $value) {
+            $keyName = substr($key, 0, 2) === 'o:' ? $key : 'o:' . $key;
+            if (!isset($keyMethods[$keyName])) {
+                continue;
+            }
+            $method = $keyMethods[$keyName];
+            if (in_array($key, ['o:entity_id', 'o:user_id'])) {
+                $value = (int) $value;
+            }
+            $entity->$method($value);
+        }
+
+        $now = new DateTime('now');
+        $entity->setCreated($now);
+
+        /** @var \Stats\Api\Adapter\StatAdapter $statAdapter */
+        $statAdapter = $this->getAdapter('stats');
+        $entityManger = $this->getEntityManager();
+
+        // Stat is created if not exists.
+        // "page" and "download" are mutually exclusive.
+        $url = $entity->getUrl();
+        $isDownload = $this->isDownload($url);
+        $entityName = $entity->getEntityName();
+        $entityId = $entity->getEntityId();
+
+        $stat = $this->findStatForHit($entity);
+        if ($stat) {
+            $stat
+                ->setModified($now);
+        } else {
+            $stat = new Stat();
+            $stat
+                ->setType($isDownload ? Stat::TYPE_DOWNLOAD : Stat::TYPE_PAGE)
+                ->setUrl($url)
+                ->setEntityName($entityName)
+                ->setEntityId($entityId)
+                ->setCreated($now)
+                ->setModified($now)
+            ;
+        }
+        $statAdapter->increaseHits($stat);
+        $entityManger->persist($stat);
+
+        // A second stat is needed to manage resource count.
+        if (!$entityName || !$entityId) {
+            return;
+        }
+
+        $statResource = $this->findStatForHit($entity, true);
+        if ($statResource) {
+            $statResource
+                ->setModified($now);
+        } else {
+            $statResource = new Stat();
+            $statResource
+                ->setType(Stat::TYPE_RESOURCE)
+                ->setUrl($url)
+                ->setEntityName($entityName)
+                ->setEntityId($entityId)
+                ->setCreated($now)
+                ->setModified($now)
+            ;
+        }
+        $statAdapter->increaseHits($statResource);
+        $entityManger->persist($statResource);
+    }
+
+    /**
+     * Find the matching Stat from a hit, without event and exception.
+     */
+    public function findStatForHit(Hit $hit, bool $statResource = false): ?Stat
+    {
+        $url = $hit->getUrl();
+        $bind = [
+            'url' => $url,
+        ];
+
+        $qb = $this->getEntityManager()->createQueryBuilder();
+        $expr = $qb->expr();
+
+        $qb
+            ->select('omeka_root')
+            ->from(Stat::class, 'omeka_root')
+            ->where($expr->eq('omeka_root.url', ':url'))
+            ->andWhere($expr->eq('omeka_root.type', ':type'))
+            ->setMaxResults(1);
+
+        if ($statResource) {
+            $entityName = $hit->getEntityName();
+            $entityId = $hit->getEntityId();
+            if (!$entityName || !$entityId) {
+                return null;
+            }
+            $qb
+                ->andWhere($expr->eq('omeka_root.entityName', ':entity_name'))
+                ->andWhere($expr->eq('omeka_root.entityId', ':entity_id'));
+            $bind['type'] = Stat::TYPE_RESOURCE;
+            $bind['entity_name'] = $entityName;
+            $bind['entity_id'] = $entityId;
+        }
+
+        // Stat is created and filled via getStat() if not exists.
+        // "page" and "download" are mutually exclusive.
+        elseif ($this->isDownload($url)) {
+            $qb
+                ->andWhere($expr->eq('omeka_root.entityName', ':entity_name'))
+                ->andWhere($expr->eq('omeka_root.entityId', ':entity_id'));
+            $bind['type'] = Stat::TYPE_DOWNLOAD;
+            $bind['entity_name'] = 'media';
+            $bind['entity_id'] = $hit->getEntityId();
+        } else {
+            $bind['type'] = Stat::TYPE_PAGE;
+        }
+
+        return $qb
+            ->setParameters($bind)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Fill data with data of the current request.
+     *
+     * @param array $data
+     * @return array
+     */
+    public function fillHit(array $data = []): array
+    {
+        // Use "o:" only to manage api.
+        $keys = [
+            'id' => 'o:id',
+            'url' => 'o:url',
+            'entity_id' => 'o:entity_id',
+            'entity_name' => 'o:entity_name',
+            'user_id' => 'o:user_id',
+            'ip' => 'o:ip',
+            'referrer' => 'o:referrer',
+            'query' => 'o:query',
+            'user_agent' => 'o:user_agent',
+            'accept_language' => 'o:accept_language',
+            'created' => 'o:created',
+        ];
+
+        $currentEntityNameAndId = $this->currentEntityNameAndId();
+        $currentRequest = $this->currentRequest();
+
+        $result = array_fill_keys($keys, null);
+        foreach ($keys as $key => $keyName) {
+            if (isset($data[$keyName])) {
+                $value = $data[$keyName];
+            } elseif (isset($data[$key])) {
+                $value = $data[$key];
+            } else {
+                switch ($keyName) {
+                    case 'o:id':
+                        $value = null;
+                        break;
+                    case 'o:url':
+                        $value = $currentRequest['url'];
+                        break;
+                    case 'o:entity_id':
+                        $value = $currentEntityNameAndId ? $currentEntityNameAndId['id'] : null;
+                        break;
+                    case 'o:entity_name':
+                        $value = $currentEntityNameAndId ? $currentEntityNameAndId['name'] : null;
+                        break;
+                    case 'o:user_id':
+                        $value = $this->currentUser();
+                        $value = $value ? $value->getId() : null;
+                        break;
+                    case 'o:ip':
+                        $value = $this->privacyIp();
+                        break;
+                    case 'o:referrer':
+                        $value = $currentRequest['referrer'];
+                        break;
+                    case 'o:query':
+                        $value = $currentRequest['query'];
+                        break;
+                    case 'o:user_agent':
+                        $value = $currentRequest['user_agent'];
+                        break;
+                    case 'o:accept_language':
+                        $value = $currentRequest['accept_language'];
+                        break;
+                    case 'created':
+                        $value = new DateTime('now');
+                        break;
+                }
+            }
+            $result[$keyName] = $value;
+        }
+        return $result;
+    }
+
+    protected function currentRequest(): array
+    {
+        /** @var \Laminas\Mvc\MvcEvent $event */
+        $services = $this->getServiceLocator();
+        $event = $services->get('Application')->getMvcEvent();
+        /** @var \Laminas\Http\PhpEnvironment\Request $request */
+        $request = $event->getRequest();
+        $currentUrl = $request->getRequestUri();
+
+        // Remove the base path, that is useless.
+        $basePath = $request->getBasePath();
+        if ($basePath && $basePath !== '/') {
+            $start = substr($currentUrl, 0, strlen($basePath));
+            // Manage specific paths for files.
+            if ($start === $basePath) {
+                $currentUrl = substr($currentUrl, strlen($basePath));
+            }
+        }
+
+        $pos = strpos($currentUrl, '?');
+        if ($pos !== false) {
+            $currentUrl = substr($currentUrl, 0, $pos);
+        }
+
+        // Same query via laminas.
+        // $query = $request->getUri()->getQuery();
+        $query = $_SERVER['QUERY_STRING'] ?? null;
+        $referrer = $_SERVER['HTTP_REFERER'] ?? null;
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        $acceptLanguage = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null;
+        return [
+            'url' => $currentUrl,
+            'query' => empty($query) ? null : (string) $query,
+            'referrer' => empty($referrer) ? null : (string) $referrer,
+            'user_agent' => empty($userAgent) ? null : (string) $userAgent,
+            'accept_language' => empty($acceptLanguage) ? null : (string) $acceptLanguage,
+        ];
+    }
+
+    /**
+     * Get the name and the id of the current entity from the route.
+     *
+     * The filter event "stats_resource" from Omeka classic is useless now.
+     *
+     * @todo Store the site id and the site page id (it may be slow, so set it during routing?).
+     */
+    protected function currentEntityNameAndId(): ?array
+    {
+        /** @var \Laminas\Mvc\MvcEvent $event */
+        $event = $this->getServiceLocator()->get('Application')->getMvcEvent();
+        $routeParams = $event->getRouteMatch()->getParams();
+
+        $id = $routeParams['id'] ?? $routeParams['resource-id'] ?? $routeParams['media-id'] ?? $routeParams['item-id'] ?? $routeParams['item-set-id'] ?? null;
+        if (!$id) {
+            return null;
+        }
+
+        $name = $routeParams['__CONTROLLER__'] ?? $routeParams['controller'] ?? $routeParams['resource'] ?? null;
+        if (!$name) {
+            return null;
+        }
+
+        // TODO Get the full mapping from controllers to api names.
+        $controllerToNames = [
+            'item' => 'items',
+            'item-set' => 'item_sets',
+            'media' => 'media',
+            'site_page' => 'site_pages',
+            'annotation' => 'annotations',
+            'Omeka\Controller\Site\Item' => 'items',
+            'Omeka\Controller\Site\ItemSet' => 'item_sets',
+            'Omeka\Controller\Site\Media' => 'media',
+            'Omeka\Controller\Site\Page' => 'site_pages',
+            'Annotate\Controller\Site\Annotation' => 'annotations',
+        ];
+
+        $name = $controllerToNames[$name] ?? $name . 's';
+
+        // Manage exception for item sets (the item set id is get above).
+        if ($name === 'items' && ($routeParams['action'] ?? 'browse') === 'browse') {
+            $name = 'item_sets';
+        }
+
+        return [
+            'name' => $name,
+            'id' => $id,
+        ];
+    }
+
+    protected function currentUser(): ?User
+    {
+        return $this->getServiceLocator()->get('Omeka\AuthenticationService')
+            ->getIdentity();
+    }
+
+    /**
+     * Determine whether or not the hit is from a bot/webcrawler
+     */
+    public function isBot(?string $userAgent): bool
+    {
+        // For dev purpose.
+        // print "<!-- UA : " . $this->resource->getUserAgent() . " -->";
+        $crawlers = 'bot|crawler|slurp|spider|check_http';
+        return $userAgent && preg_match("~$crawlers~", (string) $userAgent);
+    }
+
+    /**
+     * Determine whether or not the hit is a direct download.
+     *
+     * Of course, only files stored locally can be hit.
+     * @todo Manage a specific path.
+     *
+     * @return bool True if hit has a resource, even deleted.
+     */
+    public function isDownload(?string $url): bool
+    {
+        $url = (string) $url;
+        return strpos($url, '/files/original/') === 0
+            || strpos($url, '/files/large/') === 0
+            // For migration from Omeka Classic.
+            || strpos($url, '/files/fullsize/') === 0;
+    }
+
+    /**
+     * Get the ip of the client.
+     *
+     * @todo Use the laminas http function.
+     */
+    public function getClientIp(): string
+    {
+        // Some servers add the real ip.
+        $ip = $_SERVER['HTTP_X_REAL_IP']
+            ?? $_SERVER['REMOTE_ADDR'];
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)
+            || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+        ) {
+            return $ip;
+        }
+        return '::';
+    }
+
+    /**
+     * Manage privacy settings for an ip address.
+     *
+     * @todo Fix for ipv6.
+     */
+    public function privacyIp(?string $ip = null): string
+    {
+        if (is_null($ip)) {
+            $ip = $this->getClientIp();
+        }
+
+        if (!$ip || $ip === '::') {
+            return '::';
+        }
+
+        $settings = $this->getServiceLocator()->get('Omeka\Settings');
+        switch ($settings->get('stats_privacy')) {
+            default:
+            case 'anonymous':
+                return '::';
+            case 'hashed':
+                return md5($ip);
+            case 'partial_1':
+                $partial = explode('.', $ip);
+                $partial[1] = '---';
+                $partial[2] = '---';
+                $partial[3] = '---';
+                return implode('.', $partial);
+            case 'partial_2':
+                $partial = explode('.', $ip);
+                $partial[2] = '---';
+                $partial[3] = '---';
+                return implode('.', $partial);
+            case 'partial_3':
+                $partial = explode('.', $ip);
+                $partial[3] = '---';
+                return implode('.', $partial);
+            case 'clear':
+                return $ip;
+        }
+    }
+
     /**
      * Wrapper for count: get the total count of the specified url.
      *
@@ -121,620 +751,363 @@ class Table_Hit extends Omeka_Db_Table
     /**
      * Retrieve a count of distinct rows for a field. Empty is not count.
      *
-     * @uses Omeka_Db_Table::getSelectForCount()
-     * @param array $params optional Set of search filters upon which to base
+     * @param array $query optional Set of search filters upon which to base
      * the count.
-     *
-     * @return integer
      */
-    public function countFrequents($params = array())
+    public function countFrequents(array $query = []): int
     {
-        $field = $this->_checkHasFieldForFrequency($params);
+        $field = $this->checkFieldForFrequency($query);
         if (!$field) {
-            return;
+            return 0;
         }
 
-        $alias = $this->getTableAlias();
-        $select = $this->getSelect();
-        $this->applySearchFilters($select, $params);
+        $defaultQuery = [
+            'page' => null,
+            'per_page' => null,
+            'limit' => null,
+            'offset' => null,
+            'sort_by' => null,
+            'sort_order' => null,
+        ];
+        $query += $defaultQuery;
+        $query['sort_order'] = strtoupper((string) $query['sort_order']) === 'DESC' ? 'DESC' : 'ASC';
 
-        $select
-            ->reset(Zend_Db_Select::COLUMNS)
-            ->columns(array(
-                'hits' => new Zend_Db_Expr("COUNT(DISTINCT(`$alias`.`$field`))"),
-            ))
-            ->reset(Zend_Db_Select::GROUP);
+        // Here, it's not possible to check identified user.
+        if (!$this->currentUser()) {
+            $query['is_public'] = 1;
+        }
 
         // Remove empty values.
-        $this->filterByNotEmpty($select, $field);
+        $query['not_empty'] = $field;
 
-        return $this->_db->fetchOne($select);
+        $request = new Request(Request::SEARCH, 'hits');
+        $request->setContent($query);
+
+        // Begin building the search query.
+
+        $this->index = 0;
+        $entityManager = $this->getEntityManager();
+        $qb = $entityManager
+            ->createQueryBuilder()
+            ->select("COUNT(DISTINCT(omeka_root.$field))")
+            ->from(\Statistics\Entity\Hit::class, 'omeka_root');
+        $this->buildBaseQuery($qb, $query);
+        $this->buildQuery($qb, $query);
+        // No group here.
+        // $qb->groupBy('omeka_root.id');
+
+        // Trigger the search.query event.
+        $event = new Event('api.search.query', $this, [
+            'queryBuilder' => $qb,
+            'request' => $request,
+        ]);
+        $this->getEventManager()->triggerEvent($event);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
     /**
      * Get the most frequent data in a field. Empty values are never returned.
      *
-     * @internal Main difference with findBy() are that values are not
-     * records, but array of synthetic values.
+     * The main difference with search() is that values are not resources, but
+     * array of synthetic values.
      *
      * @param array $params A set of parameters by which to filter the objects
-     * that get returned from the database. This should contains a 'field' for
-     * the name of the column to evaluate.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
+     *   that get returned from the database. It should contains a 'field' for
+     *   the name of the column to evaluate.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
      * @return array Data and total hits.
      */
-    public function getFrequents($params, $limit = null, $page = null)
+    public function frequents(array $query = [], ?int $limit = null, ?int $page = null): array
     {
-        $field = $this->_checkHasFieldForFrequency($params);
+        $field = $this->checkFieldForFrequency($query);
         if (!$field) {
-            return;
+            return [];
         }
 
-        $alias = $this->getTableAlias();
-        $select = $this->getSelect();
-        $this->applySearchFilters($select, $params);
+        $fieldKey = $this->normalizeFieldForQueryKey($field);
 
-        $select
-            ->reset(Zend_Db_Select::COLUMNS)
-            ->columns(array(
-                "$alias.$field",
-                'hits' => new Zend_Db_Expr('COUNT(*)'),
-            ))
-            ->reset(Zend_Db_Select::GROUP)
-            ->group("$alias.$field");
+        $defaultQuery = [
+            'page' => null,
+            'per_page' => null,
+            'limit' => null,
+            'offset' => null,
+            'sort_by' => null,
+            'sort_order' => null,
+        ];
+        $query += $defaultQuery;
+        $query['sort_order'] = strtoupper((string) $query['sort_order']) === 'DESC' ? 'DESC' : 'ASC';
+
+        // Here, it's not possible to check identified user.
+        if (!$this->currentUser()) {
+            $query['is_public'] = 1;
+        }
 
         // Remove empty values.
-        $this->filterByNotEmpty($select, $field);
+        $query['not_empty'] = $field;
 
-        $sortParams = $this->_getSortParams($params);
-        if ($sortParams) {
-            $this->orderBy($select, $sortParams, array('hits'));
-        }
+        $request = new Request(Request::SEARCH, 'hits');
+        $request->setContent($query);
 
-        if ($limit) {
-            $this->applyPagination($select, $limit, $page);
-        }
+        // Begin building the search query.
+        $this->index = 0;
+        $entityManager = $this->getEntityManager();
+        $qb = $entityManager
+            ->createQueryBuilder()
+            ->select(
+                "omeka_root.$field AS $fieldKey",
+                "COUNT(omeka_root.$field) AS hits"
+            )
+            ->from(\Statistics\Entity\Hit::class, 'omeka_root');
+        $this->buildBaseQuery($qb, $query);
+        $this->buildQuery($qb, $query);
+        // Don't group by id.
+        $qb->groupBy("omeka_root.$field");
+
+        // Trigger the search.query event.
+        $event = new Event('api.search.query', $this, [
+            'queryBuilder' => $qb,
+            'request' => $request,
+        ]);
+        $this->getEventManager()->triggerEvent($event);
+
+        $this->limitQuery($qb, $query);
+        $this->sortQuery($qb, $query);
+        $qb->addOrderBy('omeka_root.id', $query['sort_order']);
 
         // Return an array with two columns.
-        $result = $this->_db->query($select, array())->fetchAll();
-        return $result;
+        return $qb->getQuery()->getScalarResult();
     }
 
     /**
      * Get the most frequent data in a field.
      *
-     * @uses Table_Hit::getFrequents()
-     *
      * @param string $field Name of the column to evaluate.
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
      * @return array Data and total of the according total hits
      */
-    public function getMostFrequents($field, $userStatus = null, $limit = null, $page = null)
+    public function mostFrequents(string $field, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
     {
-        $params = array();
-        $params['field'] = $field;
-        $params['user_status'] = $userStatus;
-        $params['sort_field'] = array(
+        $query = [];
+        $query['field'] = $field;
+        $query['user_status'] = $userStatus;
+        $query['sort_field'] = array(
             'hits' => 'DESC',
             // This order is needed in order to manage ex-aequos.
-            'added' => 'ASC',
+            'created' => 'ASC',
         );
-        return $this->getFrequents($params, $limit, $page);
+        return $this->frequents($query, $limit, $page);
+    }
+
+    /**
+     * Get the most viewed specified rows with url, resource and total.
+     *
+     * Zero viewed rows are never returned.
+     *
+     * Main difference with search() is that values are not resources, but array
+     * of synthetic values.
+     *
+     * @param array $params A set of parameters by which to filter the objects
+     *   that get returned from the database.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return array of Hits + column total.
+     */
+    public function vieweds(array $query = [], ?int $limit = null, ?int $page = null): array
+    {
+        $defaultQuery = [
+            'page' => null,
+            'per_page' => null,
+            'limit' => null,
+            'offset' => null,
+            'sort_by' => null,
+            'sort_order' => null,
+        ];
+        $query += $defaultQuery;
+        $query['sort_order'] = strtoupper((string) $query['sort_order']) === 'DESC' ? 'DESC' : 'ASC';
+
+        // Here, it's not possible to check identified user.
+        if (!$this->currentUser()) {
+            $query['user_status'] = 'anonymous';
+        }
+
+        $request = new Request(Request::SEARCH, 'hits');
+        $request->setContent($query);
+
+        // Begin building the search query.
+
+        $this->index = 0;
+        $entityManager = $this->getEntityManager();
+        $qb = $entityManager
+            ->createQueryBuilder()
+            ->select(
+                'omeka_root.url AS url',
+                'omeka_root.entity_name AS entity_name' ,
+                'omeka_root.entity_id AS entity_id',
+                'COUNT(url) AS hits'
+                // "@position:=@position+1 AS position"
+            )
+            ->from(\Statistics\Entity\Hit::class, 'omeka_root');
+        $this->buildBaseQuery($qb, $query);
+        $this->buildQuery($qb, $query);
+        // Don't group by id.
+        $qb->groupBy("omeka_root.url");
+
+        // Trigger the search.query event.
+        $event = new Event('api.search.query', $this, [
+            'queryBuilder' => $qb,
+            'request' => $request,
+        ]);
+        $this->getEventManager()->triggerEvent($event);
+
+        $this->limitQuery($qb, $query);
+        $this->sortQuery($qb, $query);
+        $qb->addOrderBy('omeka_root.id', $query['sort_order']);
+
+        // Return an array with four columns.
+        return $qb->getQuery()->getScalarResult();
+    }
+
+    /**
+     * Get the most viewed specified pages with url, resource and total.
+     *
+     * Zero viewed rows are never returned.
+     *
+     *@param null|bool $hasResource Null for all pages, true or false to set
+     *   with or without resource.
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return array of Hits + column total.
+     */
+    public function mostViewedPages($hasResource = null, $userStatus = null, $limit = null, $page = null): array
+    {
+        $query = [];
+        if (!is_null($hasResource)) {
+            $query['has_resource'] = (bool) $hasResource;
+        }
+        $query['user_status'] = $userStatus;
+        $query['sort_field'] = [
+            'hits' => 'DESC',
+            // This order is needed in order to manage ex-aequos.
+            'created' => 'ASC',
+        ];
+        return $this->vieweds($query, $limit, $page);
+    }
+
+    /**
+     * Get the most viewed specified resources with url, resource and total.
+     *
+     * Zero viewed resources are never returned.
+     *
+     * @param string|Resource|array $resourceType If array, may contain multiple
+     *   resource types.
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return array of Hits + column total.
+     */
+    public function mostViewedResources($entityName = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        $query = [];
+        $query['entity_name'] = $entityName;
+        $query['user_status'] = $userStatus;
+        $query['sort_field'] = [
+            'hits' => 'DESC',
+            // This order is needed in order to manage ex-aequos.
+            'created' => 'ASC',
+        ];
+        return $this->vieweds($query, $limit, $page);
+    }
+
+    /**
+     * Get the last viewed specified pages with url, resource and total.
+     *
+     * Zero viewed rows are never returned.
+     *
+     *@param null|bool $hasResource Null for all pages, true or false to set
+     *   with or without resource.
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return array of Hits + column total.
+     */
+    public function lastViewedPages(?bool $hasResource = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        $query = [];
+        if (!is_null($hasResource)) {
+            $query['has_entity'] = (bool) $hasResource;
+        }
+        $query['user_status'] = $userStatus;
+        $query['sort_by'] = 'created';
+        $query['sort_order'] = 'DESC';
+        return $this->vieweds($query, $limit, $page);
+    }
+
+    /**
+     * Get the last viewed specified resources with url, resource and total.
+     *
+     * Zero viewed resources are never returned.
+     *
+     * @param string|Resource|array $entityName If array, may contain multiple
+     *   resource types.
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return array of Hits + column total.
+     */
+    public function lastViewedResources($entityName = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        $query = [];
+        $query['entity_name'] = $entityName;
+        $query['user_status'] = $userStatus;
+        $query['sort_by'] = 'created';
+        $query['sort_order'] = 'DESC';
+        return $this->vieweds($query, $limit, $page);
     }
 
     /**
      * Check if there is a key 'field' with a column name for frequency queries.
-     *
-     * @param array $params
-     * @return void
      */
-     protected function _checkHasFieldForFrequency($params)
+    protected function checkFieldForFrequency($params): ?string
     {
-        if (!isset($params['field']) || !in_array($params['field'], $this->getColumns())) {
-            return;
-        }
-        return $params['field'];
+        $fields = [
+            'id' => 'id',
+            'url' => 'url',
+            'entity_name' => 'entityName',
+            'entity_id' => 'entityId',
+            'user_id'=> 'userId',
+            'ip' => 'ip',
+            'query' => 'query',
+            'referrer' => 'referrer',
+            'user_agent' => 'userAgent',
+            'accept_language' => 'acceptLanguage',
+            'created' => 'created',
+            // For simplicity, but not recommended.
+            'entityName' => 'entityName',
+            'entityId' => 'entityId',
+            'userId'=> 'userId',
+            'userAgent' => 'userAgent',
+            'acceptLanguage' => 'acceptLanguage',
+        ];
+        return $fields[$params['field'] ?? null] ?? null;
     }
 
     /**
-     * Get the most viewed specified rows with url, record and total.
-     *
-     * Zero viewed rows are never returned.
-     *
-     * @internal Main difference with findBy() are that values are not
-     * records, but array of synthetic values.
-     *
-     * @param array $params A set of parameters by which to filter the objects
-     * that get returned from the database.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
-     * @return array of Hits + column total.
+     * Check if there is a key 'field' with a column name for frequency queries.
      */
-    public function getVieweds(
-        $params = array(),
-        $limit = null,
-        $page = null)
+    protected function normalizeFieldForQueryKey(string $field): ?string
     {
-        $alias = $this->getTableAlias();
-        $select = $this->getSelect();
-        $this->applySearchFilters($select, $params);
-
-        $select
-            ->reset(Zend_Db_Select::COLUMNS)
-            ->columns(array(
-                'url' => "$alias.url",
-                'record_type' => "$alias.record_type",
-                'record_id' => "$alias.record_id",
-                'hits' => new Zend_Db_Expr('COUNT(*)'),
-                // "@position:=@position+1 AS position",
-            ))
-            ->reset(Zend_Db_Select::GROUP)
-            ->group("$alias.url");
-
-        $sortParams = $this->_getSortParams($params);
-        if ($sortParams) {
-            $this->orderBy($select, $sortParams, array('hits'));
-        }
-
-        if ($limit) {
-            $this->applyPagination($select, $limit, $page);
-        }
-
-        // Return an array with four columns.
-        $result = $this->_db->query($select, array())->fetchAll();
-        return $result;
-    }
-
-    /**
-     * Get the most viewed specified pages with url, record and total.
-     *
-     * Zero viewed rows are never returned.
-     *
-     * @uses Table_Hit::getVieweds().
-     *
-     *@param null|boolean $hasRecord Null for all pages, true or false to set
-     * with or without record.
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
-     * @return array of Hits + column total.
-     */
-    public function getMostViewedPages($hasRecord = null, $userStatus = null, $limit = null, $page = null)
-    {
-        $params = array();
-        $params['has_record'] = $hasRecord;
-        $params['user_status'] = $userStatus;
-        $params['sort_field'] = array(
-            'hits' => 'DESC',
-            // This order is needed in order to manage ex-aequos.
-            'added' => 'ASC',
-        );
-        return $this->getVieweds($params, $limit, $page);
-    }
-
-    /**
-     * Get the most viewed specified records with url, record and total.
-     *
-     * Zero viewed records are never returned.
-     *
-     * @uses Table_Hit::getVieweds().
-     *
-     * @param string|Record|array $recordType If array, may contain multiple
-     * record types.
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
-     * @return array of Hits + column total.
-     */
-    public function getMostViewedRecords($recordType = null, $userStatus = null, $limit = null, $page = null)
-    {
-        $params = array();
-        $params['record_type'] = $recordType;
-        $params['user_status'] = $userStatus;
-        $params['sort_field'] = array(
-            'hits' => 'DESC',
-            // This order is needed in order to manage ex-aequos.
-            'added' => 'ASC',
-        );
-        return $this->getVieweds($params, $limit, $page);
-    }
-
-    /**
-     * Get the last viewed specified pages with url, record and total.
-     *
-     * Zero viewed rows are never returned.
-     *
-     * @uses Table_Hit::getVieweds().
-     *
-     *@param null|boolean $hasRecord Null for all pages, true or false to set
-     * with or without record.
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
-     * @return array of Hits + column total.
-     */
-    public function getLastViewedPages($hasRecord = null, $userStatus = null, $limit = null, $page = null)
-    {
-        $params = array();
-        $params['has_record'] = (bool) $hasRecord;
-        $params['user_status'] = $userStatus;
-        $params['sort_field'] = array(
-            'added' => 'DESC',
-        );
-        return $this->getVieweds($params, $limit, $page);
-    }
-
-    /**
-     * Get the last viewed specified records with url, record and total.
-     *
-     * Zero viewed records are never returned.
-     *
-     * @uses Table_Hit::getVieweds().
-     *
-     * @param string|Record|array $recordType If array, may contain multiple
-     * record types.
-     * @param string $userStatus Can be hits (default), hits_anonymous or
-     * hits_identified.
-     * @param integer $limit Number of objects to return per "page".
-     * @param integer $page Page to retrieve.
-     *
-     * @return array of Hits + column total.
-     */
-    public function getLastViewedRecords($recordType = null, $userStatus = null, $limit = null, $page = null)
-    {
-        $params = array();
-        $params['record_type'] = $recordType;
-        $params['user_status'] = $userStatus;
-        $params['sort_field'] = array(
-            'added' => 'DESC',
-        );
-        return $this->getVieweds($params, $limit, $page);
-    }
-
-    /**
-     * @param Omeka_Db_Select
-     * @param array
-     * @return void
-     */
-    public function applySearchFilters($select, $params)
-    {
-        $alias = $this->getTableAlias();
-        $boolean = new Omeka_Filter_Boolean;
-        $genericParams = array();
-        foreach ($params as $key => $value) {
-            if ($value === null || (is_string($value) && trim($value) == '')) {
-                continue;
-            }
-            switch ($key) {
-                case 'url':
-                    $genericParams['url'] = get_view()->stats()->checkAndCleanUrl($value);
-                    break;
-                case 'record':
-                    $this->filterByRecord($select, $value);
-                    break;
-                case 'record_type':
-                    $genericParams['record_type'] = get_view()->stats()->checkRecordType($value);
-                    break;
-                case 'has_record':
-                    $this->filterByHasRecord($select, $value);
-                    break;
-                case 'is_download':
-                    $this->filterByIsDownload($select, $value);
-                    break;
-                case 'user':
-                    $user_id = $this->_getUserId($value);
-                    $this->filterByUser($select, $user_id, 'user_id');
-                    break;
-                case 'user_status':
-                    $this->filterByUserStatus($select, $value);
-                    break;
-                case 'since':
-                    $this->filterBySince($select, $value, 'added');
-                    break;
-                case 'until':
-                    $this->filterByUntil($select, $value, 'added');
-                    break;
-                case 'field':
-                    $this->filterByField($select, $value);
-                    break;
-                case 'not_empty':
-                    $this->filterByNotEmpty($select, $value);
-                    break;
-                default:
-                    $genericParams[$key] = $value;
-            }
-        }
-
-        if (!empty($genericParams)) {
-            parent::applySearchFilters($select, $genericParams);
-        }
-
-        // If we returning the data itself, we need to group by the record id.
-        $select->group("$alias.id");
-    }
-
-    /**
-     * Filter hits by record (or without record).
-     *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param Record|array $record If array, contains record type and record id.
-     * @return void
-     */
-    public function filterByRecord($select, $record)
-    {
-        $alias = $this->getTableAlias();
-        $record = get_view()->stats()->checkAndPrepareRecord($record);
-        $select->where("`$alias`.`record_type` = ?", $record['record_type']);
-        $select->where("`$alias`.`record_id` = ?", $record['record_id']);
-    }
-
-    /**
-     * Filter hits that have a record or not.
-     *
-     * @param Omeka_Db_Select
-     * @param null|boolean $hasRecord
-     * @return void
-     */
-    public function filterByHasRecord($select, $hasRecord)
-    {
-        if (!is_null($hasRecord)) {
-            $alias = $this->getTableAlias();
-            if ($hasRecord) {
-                $select->where("`$alias`.`record_type` != ''");
-            }
-            else {
-                $select->where("`$alias`.`record_type` = ''");
-            }
-        }
-    }
-
-    /**
-     * Filter direct download hit.
-     *
-     * @param Omeka_Db_Select
-     * @param null|boolean $isDownload
-     * @return void
-     */
-    public function filterByIsDownload($select, $isDownload)
-    {
-        if (!is_null($isDownload)) {
-            $alias = $this->getTableAlias();
-            if ($isDownload) {
-                $select->where("`$alias`.`url` LIKE '/files/original/%'");
-                $select->where("`$alias`.`url` LIKE '/files/fullsize/%'");
-            }
-            else {
-                $select->where("`$alias`.`url` NOT LIKE '/files/original/%'");
-                $select->where("`$alias`.`url` NOT LIKE '/files/fullsize/%'");
-            }
-        }
-    }
-
-    /**
-     * Filter hits by status of user (anonymous or identified).
-     *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param string $userStatus "hits_anonymous" or "hits_identified", else not filtered.
-     * @return void
-     */
-    public function filterByUserStatus($select, $userStatus)
-    {
-        $alias = $this->getTableAlias();
-        switch ($userStatus) {
-            case 'anonymous':
-            case 'hits_anonymous':
-                $select->where("`$alias`.`user_id` = 0");
-                break;
-            case 'identified':
-            case 'hits_identified':
-                $select->where("`$alias`.`user_id` > 0");
-                break;
-            // default: no filter.
-        }
-    }
-
-    /**
-     * Filter select object by date until.
-     *
-     * @param Zend_Db_Select $select
-     * @param string $dateSince ISO 8601 formatted date (now if empty)
-     * @param string $dateField "added" or "modified"
-     */
-    public function filterByUntil($select, $dateUntil, $dateField)
-    {
-        // Reject invalid date fields.
-        if (!in_array($dateField, array('added', 'modified'))) {
-            return;
-        }
-
-        // Accept an ISO 8601 date, set the tiemzone to the server's default
-        // timezone, and format the date to be MySQL timestamp compatible.
-        $date = new Zend_Date($dateUntil, Zend_Date::ISO_8601);
-        $date->setTimezone(date_default_timezone_get());
-        $date = $date->get('yyyy-MM-dd HH:mm:ss');
-
-        // Select all dates that are greater than the passed date.
-        $alias = $this->getTableAlias();
-        $select->where("`$alias`.`$dateField` <= ?", $date);
-    }
-
-    /**
-     * Filter hits by field and remove empty ones.
-     *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param string $column The name of the column to evaluate
-     * @return void
-     */
-    public function filterByNotEmpty($select, $column)
-    {
-        $columns = $this->getColumns();
-        if (in_array($column, $columns)) {
-            $alias = $this->getTableAlias();
-            $select->where("`$alias`.`$column` != ''");
-        }
-    }
-
-   /**
-     * Manage special fields for specific columns.
-    *
-     * @see self::applySearchFilters()
-     * @param Omeka_Db_Select
-     * @param string $field The name of the column to evaluate
-     * @return void
-     */
-    public function filterByField($select, $field)
-    {
-        $alias = $this->getTableAlias();
-        switch ($field) {
-            case 'referrer':
-                $select->where("`$alias`.`referrer` NOT LIKE ?", WEB_ROOT . '/%');
-                break;
-        }
-    }
-
-    public function getCountsByUserStatus($params = array())
-    {
-        $select = $this->getSelectForCount($params);
-
-        $user_status = new Zend_Db_Expr('CASE user_id WHEN 0 THEN "hits_anonymous" ELSE "hits_identified" END');
-
-        $select->reset(Zend_Db_Select::COLUMNS);
-        $select->columns(array(
-            'count' => 'COUNT(*)',
-            'user_status' => $user_status,
-        ));
-        $select->group($user_status);
-
-        $results = $this->_db->query($select, array())->fetchAll();
-        $counts = array(
-            'hits_anonymous' => 0,
-            'hits_identified' => 0,
-        );
-        foreach ($results as $result) {
-            $counts[$result['user_status']] = $result['count'];
-        }
-
-        return $counts;
-    }
-
-    /**
-     * Get and parse sorting parameters (may be multiples).
-     *
-     * A sorting direction of 'ASC' will be used if no direction parameter is
-     * passed.
-     *
-     * @see Omeka_Db_Table::_getSortParams()
-     *
-     * @param array $params Sort field may be an array of fields as key and
-     * direction as value.
-     * @return array|null Array of sort field and sort dir if params exist, null
-     * otherwise.
-     */
-    private function _getSortParams($params)
-    {
-        if (!isset($params[self::SORT_PARAM]) || empty($params[self::SORT_PARAM])) {
-            return;
-        }
-        $sortField = $params[self::SORT_PARAM];
-
-        // Order by multiple fields.
-        if (is_array($sortField)) {
-            foreach ($sortField as &$field) {
-                if (in_array($field, array('total', 'anonymous', 'identified'))) {
-                    $field = $this->_checkUserStatus($field);
-                }
-            }
-            return $sortField;
-        }
-
-        // Order by one field.
-        // Don't forget to check specific user status.
-        if (in_array($sortField, array('total', 'anonymous', 'identified'))) {
-            $sortField = $this->_checkUserStatus($sortField);
-        }
-
-        $sortDir = isset($params[self::SORT_DIR_PARAM])
-                && in_array($params[self::SORT_DIR_PARAM], array('d', 'DESC'))
-            ? 'DESC'
-            : 'ASC';
-        return array($sortField => $sortDir);
-    }
-
-    /**
-     * Order select.
-     *
-     * @param Omeka_Db_Select
-     * @param array $order Associative array of column name and direction.
-     * @param array $aliasColumns Allows alias of columns and not only their
-     * names.
-     * @return void
-     */
-     public function orderBy($select, $order, $aliasColumns = array())
-     {
-        $alias = $this->getTableAlias();
-        $columns = $this->getColumns();
-        foreach ($order as $sortField => $sortDir) {
-            if (in_array($sortField, $columns)) {
-                $sortDir = in_array($sortDir, array('DESC', 'd')) ? 'DESC' : 'ASC';
-                $select->order(array("$alias.$sortField $sortDir"));
-            }
-            elseif (in_array($sortField, $aliasColumns)) {
-                $sortDir = in_array($sortDir, array('DESC', 'd')) ? 'DESC' : 'ASC';
-                $select->order(array("$sortField $sortDir"));
-            }
-        }
-    }
-
-    /**
-     * Helper to check and get column name for user status ('hits' by default).
-     *
-     * @internal Recommended user status are 'hits', 'hits_anonymous' and
-     * 'hits_identified', but specific methods of this class allow 'anonymous'
-     * and 'identified' too. Don't use them in generic functions.
-     *
-     * @param string $userStatus
-     *
-     * @return string
-     */
-    private function _checkUserStatus($userStatus)
-    {
-        switch($userStatus) {
-            case 'anonymous':
-            case 'hits_anonymous':
-                return 'hits_anonymous';
-            case 'identified':
-            case 'hits_identified':
-                return 'hits_identified';
-        }
-        return 'hits';
-     }
-
-    /**
-     * Helper to get id from a user (can be an User object or an id).
-     *
-     * @param User|integer $user
-     * @return integer|null.
-     */
-    protected function _getUserId($user)
-    {
-        return (is_object($user) && $user instanceof User)
-            ? $user->id
-            : (int) $user;
+        $fields = [
+            'entityName' => 'entity_name',
+            'entityId' => 'entity_id',
+            'userId'=> 'user_id',
+            'userAgent' => 'user_agent',
+            'acceptLanguage' => 'accept_language',
+        ];
+        return $fields[$field] ?? $field;
     }
 }
