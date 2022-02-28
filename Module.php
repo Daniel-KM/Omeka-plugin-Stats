@@ -130,6 +130,13 @@ class Module extends AbstractModule
      */
     public function logCurrentUrl(): void
     {
+        // Don't store server ping or internal redirect on root or some proxies.
+        if (empty($_SERVER['HTTP_HOST'])
+            // || ($_SERVER['REQUEST_URI'] === '/' && $_SERVER['QUERY'] === '' && $_SERVER['REQUEST_METHOD'] === 'GET' && $_SERVER['CONTENT_LENGTH'] === '0')
+        ) {
+            return;
+        }
+
         // Don't log admin pages.
         $services = $this->getServiceLocator();
 
