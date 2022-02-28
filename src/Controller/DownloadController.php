@@ -87,6 +87,9 @@ class DownloadController extends AbstractActionController
 
     /**
      * Check file and prepare it to be sent.
+     *
+     * Unlike Omeka Classic, the current file is already logged in main event
+     * "view.layout" (see main Module and HitAdapter::currentRequest()).
      */
     public function filesAction()
     {
@@ -98,42 +101,7 @@ class DownloadController extends AbstractActionController
             throw new Exception\NotFoundException;
         }
 
-        if (!$this->isAdminRequest()) {
-            $this->logCurrentFile();
-        }
-
         $this->sendFile();
-    }
-
-    /**
-     * Log the hit on the current file.
-     */
-    protected function logCurrentFile(): void
-    {
-        $includeBots = (bool) $this->settings()->get('statistics_include_bots');
-        if (empty($includeBots)) {
-            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-            if ($this->hitAdapter->isBot($userAgent)) {
-                return;
-            }
-        }
-
-        $data = [
-            // TODO Only local storage is logged currently.
-            'o:url' => '/files/' . $this->storageType . '/' . $this->filename,
-            'o:entity_id' => $this->media->getId(),
-            'o:entity_name' => 'media',
-        ];
-
-        $request = new Request(Request::CREATE, 'hits');
-        $request
-            ->setContent($data)
-            ->setOption('initialize', false)
-            ->setOption('finalize', false)
-            ->setOption('returnScalar', 'id')
-        ;
-        // The entity manager is automatically flushed by default.
-        $this->hitAdapter->create($request);
     }
 
     /**
@@ -240,35 +208,5 @@ class DownloadController extends AbstractActionController
         }
 
         return $this->media;
-    }
-
-    /**
-     * Check if the file is fetched from an admin front-end.
-     */
-    protected function isAdminRequest(): bool
-    {
-        // It's not simple to determine from server if the request comes from
-        // a visitor on the site or something else.
-        // So use the referrer and the identity.
-        if (!$this->identity()) {
-            return false;
-        }
-        $referrer = (string) $this->getRequest()->getServer('HTTP_REFERER');
-        if (!$referrer) {
-            return false;
-        }
-        $urlAdminTop = $this->url()->fromRoute('admin', [], ['force_canonical' => true]) . '/';
-        return strpos($referrer, $urlAdminTop) === 0;
-    }
-
-    /**
-     * Redirect to previous page.
-     */
-    protected function gotoPreviousPage()
-    {
-        return $this->redirect()->toUrl(
-            $this->getRequest()->getServer('HTTP_REFERER')
-               ?: $this->url()->fromRoute('top')
-        );
     }
 }

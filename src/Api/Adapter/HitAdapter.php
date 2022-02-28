@@ -562,6 +562,12 @@ class HitAdapter extends AbstractEntityAdapter
             }
         }
 
+        // The downloaded files are redirected from .htaccess, so it is useless
+        // to store the path "/download/".
+        if (substr($currentUrl, 0, 10) === '/download/') {
+            $currentUrl = substr($currentUrl, 9);
+        }
+
         $pos = strpos($currentUrl, '?');
         if ($pos !== false) {
             $currentUrl = substr($currentUrl, 0, $pos);
@@ -595,14 +601,13 @@ class HitAdapter extends AbstractEntityAdapter
         $event = $this->getServiceLocator()->get('Application')->getMvcEvent();
         $routeParams = $event->getRouteMatch()->getParams();
 
-        $id = $routeParams['id'] ?? $routeParams['resource-id'] ?? $routeParams['media-id'] ?? $routeParams['item-id'] ?? $routeParams['item-set-id'] ?? null;
-        if (!$id) {
-            return null;
-        }
-
         $name = $routeParams['__CONTROLLER__'] ?? $routeParams['controller'] ?? $routeParams['resource'] ?? null;
         if (!$name) {
             return null;
+        }
+
+        if ($name === 'Download') {
+            return $this->currentMediaId($routeParams);
         }
 
         // TODO Get the full mapping from controllers to api names.
@@ -621,15 +626,52 @@ class HitAdapter extends AbstractEntityAdapter
 
         $name = $controllerToNames[$name] ?? $name . 's';
 
-        // Manage exception for item sets (the item set id is get above).
+        // Manage exception for item sets (the item set id is get below).
         if ($name === 'items' && ($routeParams['action'] ?? 'browse') === 'browse') {
             $name = 'item_sets';
+        }
+
+        $id = $routeParams['id'] ?? $routeParams['resource-id'] ?? $routeParams['media-id'] ?? $routeParams['item-id'] ?? $routeParams['item-set-id'] ?? null;
+        if (!$id) {
+            return null;
         }
 
         return [
             'name' => $name,
             'id' => $id,
         ];
+    }
+
+    protected function currentMediaId(array $params): ?array
+    {
+        if (empty($params['type']) || empty($params['filename'])) {
+            return null;
+        }
+
+        // For compatibility with module ArchiveRepertory, don't take the
+        // filename, but remove the extension.
+        // $storageId = pathinfo($filename, PATHINFO_FILENAME);
+        $filename = (string) $params['filename'];
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+        $storageId = mb_strlen($extension)
+            ? mb_substr($filename, 0, -mb_strlen($extension) - 1)
+            : $filename;
+
+        // "storage_id" is not available through default api, so use core entity
+        // manager. Nevertheless, the call to the api allows to check rights.
+        if (!$storageId) {
+            return null;
+        }
+
+        try {
+            $media = $this->getAdapter('media')->findEntity(['storageId' => $storageId]);
+            return [
+                'name' => 'media',
+                'id' => $media->getId(),
+            ];
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            return null;
+        }
     }
 
     protected function currentUser(): ?User

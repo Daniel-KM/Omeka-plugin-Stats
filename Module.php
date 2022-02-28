@@ -70,7 +70,7 @@ class Module extends AbstractModule
         $sharedEventManager->attach(
             '*',
             'view.layout',
-            [$this, 'logCurrentPage']
+            [$this, 'logCurrentUrl']
         );
 
         // Events for the public front-end.
@@ -126,9 +126,9 @@ class Module extends AbstractModule
     }
 
     /**
-     * Log the hit on the current page.
+     * Log the hit on the current url (page or downloaded file).
      */
-    public function logCurrentPage()
+    public function logCurrentUrl(): void
     {
         // Don't log admin pages.
         $services = $this->getServiceLocator();
@@ -137,6 +137,21 @@ class Module extends AbstractModule
         $status = $services->get('Omeka\Status');
         if ($status->isAdminRequest()) {
             return;
+        }
+
+        // If the request is a download, don't log it for admin.
+        // It's not simple to determine from server if the request comes from a
+        // visitor on the site or something else. So use referrer and identity.
+        $referrer = $_SERVER['HTTP_REFERER'] ?? null;
+        if ($referrer
+            && strpos($referrer, '/admin/')
+            && $status->getRouteMatch()->getMatchedRouteName() === 'download'
+            && $services->get('Omeka\AuthenticationService')->getIdentity()
+        ) {
+            $urlAdminTop = $services->get('ControllerPluginManager')->get('url')->fromRoute('admin', [], ['force_canonical' => true]) . '/';
+            if (strpos($referrer, $urlAdminTop) === 0) {
+                return;
+            }
         }
 
         // For performance, use the adapter directly, not the api.
