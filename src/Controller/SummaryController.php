@@ -3,12 +3,12 @@
 namespace Statistics\Controller;
 
 use Laminas\Mvc\Controller\AbstractActionController;
-use Laminas\ServiceManager\ServiceLocatorInterface;
 use Laminas\View\Model\ViewModel;
-use Statistics\Entity\Stat;
 
 /**
  * Controller to get summary of Stats.
+ *
+ * @todo Merge with BrowseController.
  */
 class SummaryController extends AbstractActionController
 {
@@ -20,76 +20,76 @@ class SummaryController extends AbstractActionController
     /**
      * Index action.
      */
-    public function indexAction(): void
+    public function indexAction()
     {
-        $this->userStatus = $this->status()->isSiteRequest()
-            ? $this->settings()->get('statistics_default_user_status_public')
-            : $this->settings()->get('statistics_default_user_status_admin');
+        $isAdminRequest = $this->status()->isAdminRequest();
+        $this->userStatus = $isAdminRequest
+           ? $this->settings()->get('statistics_default_user_status_admin')
+            : $this->settings()->get('statistics_default_user_status_public');
 
         $results = [];
         $time = time();
+
+        $translate = $this->plugins->get('translate');
 
         $results['all'] = $this->statsPeriod();
 
         $results['today'] = $this->statsPeriod(strtotime('today'));
 
-        $results['history'][$this->translate('Last year')] = $this->statsPeriod( // @translate
+        $results['history'][$translate('Last year')] = $this->statsPeriod( // @translate
             strtotime('-1 year', strtotime(date('Y-1-1', $time))),
             strtotime(date('Y-1-1', $time) . ' - 1 second')
         );
-        $results['history'][$this->translate('Last month')] = $this->statsPeriod(
+        $results['history'][$translate('Last month')] = $this->statsPeriod( // @translate
             strtotime('-1 month', strtotime(date('Y-m-1', $time))),
             strtotime(date('Y-m-1', $time) . ' - 1 second')
         );
-        $results['history'][$this->translate('Last week')] = $this->statsPeriod(
+        $results['history'][$translate('Last week')] = $this->statsPeriod( // @translate
             strtotime("previous week"),
             strtotime("previous week + 6 days")
         );
-        $results['history'][$this->translate('Yesterday')] = $this->statsPeriod(
+        $results['history'][$translate('Yesterday')] = $this->statsPeriod( // @translate
             strtotime('-1 day', strtotime(date('Y-m-d', $time))),
             strtotime('-1 day', strtotime(date('Y-m-d', $time)))
         );
 
-        $results['current'][$this->translate('This year')] = // @translate
+        $results['current'][$translate('This year')] = // @translate
             $this->statsPeriod(strtotime(date('Y-1-1', $time)));
-        $results['current'][$this->translate('This month')] =  // @translate
+        $results['current'][$translate('This month')] =  // @translate
             $this->statsPeriod(strtotime(date('Y-m-1', $time)));
-        $results['current'][$this->translate('This week')] = // @translate
+        $results['current'][$translate('This week')] = // @translate
             $this->statsPeriod(strtotime('this week'));
-        $results['current'][$this->translate('This day')] = // @translate
+        $results['current'][$translate('This day')] = // @translate
             $this->statsPeriod(strtotime('today'));
 
         foreach ([365 => null, 30 => null, 7 => null, 1 => null] as $start => $endPeriod) {
             $startPeriod = strtotime("- {$start} days");
             $label = ($start == 1)
-                ? $this->translate('Last 24 hours') // @translate
-                : $this->translate('Last %s days', $start); // @translate
+                ? $translate('Last 24 hours') // @translate
+                : sprintf($translate('Last %s days'), $start); // @translate
             $results['rolling'][$label] = $this->statsPeriod($startPeriod, $endPeriod);
         }
 
-        if (is_allowed('Stats_Browse', 'by-page')) {
-            $results['most_viewed_pages'] = $tableStat->getMostViewedPages(null, $userStatus, 10);
-        }
-        if (is_allowed('Stats_Browse', 'by-record')) {
-            $results['most_viewed_records'] = $tableStat->getMostViewedResources(null, $userStatus, 10);
-            $results['most_viewed_collections'] = $tableStat->getMostViewedResources('Collection', $userStatus, 10);
-        }
-        if (is_allowed('Stats_Browse', 'by-download')) {
-            $results['most_viewed_downloads'] = $tableStat->getMostViewedDownloads($userStatus, 10);
-        }
-
-        if (is_allowed('Stats_Browse', 'by-field')) {
-            $results['most_frequent_fields'] = [];
-            $results['most_frequent_fields']['referrer'] = $tableHit->getMostFrequents('referrer', $userStatus, 10);
-            $results['most_frequent_fields']['query'] = $tableHit->getMostFrequents('query', $userStatus, 10);
-            $results['most_frequent_fields']['user_agent'] = $tableHit->getMostFrequents('user_agent', $userStatus, 10);
-            $results['most_frequent_fields']['accept_language'] = $tableHit->getMostFrequents('accept_language', $userStatus, 10);
+        if ($this->userIsAllowed('Statistics\Controller\Browse', 'by-page')) {
+            /** @var \Statistics\View\Helper\Statistic $statistic */
+            $statistic = $this->viewHelpers()->get('statistic');
+            $results['most_viewed_pages'] = $statistic->mostViewedPages(null, $this->userStatus, 10);
+            $results['most_viewed_resources'] = $statistic->mostViewedResources(null, $this->userStatus, 10);
+            $results['most_viewed_item_sets'] = $statistic->mostViewedResources('item_sets', $this->userStatus, 10);
+            $results['most_viewed_downloads'] = $statistic->mostViewedDownloads($this->userStatus, 10);
+            $results['most_frequent_fields']['referrer'] = $statistic->mostFrequents('referrer', $this->userStatus, 10);
+            $results['most_frequent_fields']['query'] = $statistic->mostFrequents('query', $this->userStatus, 10);
+            $results['most_frequent_fields']['user_agent'] = $statistic->mostFrequents('user_agent', $this->userStatus, 10);
+            $results['most_frequent_fields']['accept_language'] = $statistic->mostFrequents('accept_language', $this->userStatus, 10);
         }
 
-        $this->view->assign([
+        $view = new ViewModel([
             'results' => $results,
-            'user_status' => $userStatus,
+            'userStatus' => $this->userStatus,
         ]);
+
+        return $view
+            ->setTemplate($isAdminRequest ? 'statistics/admin/summary/index' : 'statistics/site/summary/index');
     }
 
     /**
@@ -109,17 +109,23 @@ class SummaryController extends AbstractActionController
             $params['until'] = date('Y-m-d 23:59:59', $endPeriod);
         }
 
-        $result = [];
-        if (is_admin_theme()) {
-            $counts = $tableHit->getCountsByUserStatus($params);
-            $result['anonymous'] = $counts['hits_anonymous'];
-            $result['identified'] = $counts['hits_identified'];
-            $result['total'] = $result['anonymous'] + $result['identified'];
-        } else {
-            $params['user_status'] = $userStatus;
-            $result = $tableHit->count($params);
+        $api = $this->api();
+        if ($this->status()->isAdminRequest()) {
+            // TODO Use a single query (see version for Omeka Classic).
+            $params['user_status'] = 'anonymous';
+            $anonymous = $api->search('hits', $params)->getTotalResults();
+            $params['user_status'] = 'identified';
+            $identified = $api->search('hits', $params)->getTotalResults();
+            return [
+                'anonymous' => $anonymous,
+                'identified' => $identified,
+                'total' => $anonymous + $identified,
+            ];
         }
 
-        return $result;
+        $params['user_status'] = $this->userStatus ?: 'total';
+        return [
+            'total' => $api->search('hits', $params)->getTotalResults(),
+        ];
     }
 }
