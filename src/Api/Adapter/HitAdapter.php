@@ -105,6 +105,18 @@ class HitAdapter extends AbstractEntityAdapter
             }
         }
 
+        if (isset($query['has_resource'])) {
+            $query['has_entity'] = $query['has_resource'];
+        }
+        if (isset($query['has_entity'])) {
+            $qb
+                ->andWhere(
+                    $query['has_entity']
+                        ? $expr->neq('omeka_root.entityName', $this->createNamedParameter($qb, ''))
+                        : $expr->eq('omeka_root.entityName', $this->createNamedParameter($qb, ''))
+                );
+        }
+
         if (isset($query['has_entity']) && $query['has_entity'] !== '') {
             if ($query['has_entity']) {
                 $qb->andWhere($expr->neq(

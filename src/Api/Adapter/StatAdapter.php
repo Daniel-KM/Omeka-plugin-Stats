@@ -130,9 +130,15 @@ class StatAdapter extends AbstractEntityAdapter
         }
 
         if (isset($query['has_resource'])) {
-            $query['has_resource']
-                ? $qb->andWhere('omeka_root.entityName != ""')
-                : $qb->andWhere('omeka_root.entityName = ""');
+            $query['has_entity'] = $query['has_resource'];
+        }
+        if (isset($query['has_entity'])) {
+            $qb
+                ->andWhere(
+                    $query['has_entity']
+                        ? $expr->neq('omeka_root.entityName', $this->createNamedParameter($qb, ''))
+                        : $expr->eq('omeka_root.entityName', $this->createNamedParameter($qb, ''))
+                );
         }
 
         if (isset($query['not_zero']) && is_scalar($query['not_zero'])) {
