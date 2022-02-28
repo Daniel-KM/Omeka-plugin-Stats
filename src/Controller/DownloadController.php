@@ -3,35 +3,86 @@
 namespace Statistics\Controller;
 
 use Laminas\Mvc\Controller\AbstractActionController;
-use Laminas\ServiceManager\ServiceLocatorInterface;
-use Laminas\View\Model\ViewModel;
-use Statistics\Entity\Stat;
+use Omeka\Api\Adapter\MediaAdapter;
+use Omeka\Api\Request;
+use Omeka\Entity\Media;
+use Omeka\Mvc\Exception;
+use Statistics\Api\Adapter\HitAdapter;
 
 /**
  * The download controller class.
  *
  * Count direct download of a file.
+ *
+ * @see \AccessResource\Controller\AccessResourceController
  */
 class DownloadController extends AbstractActionController
 {
-    protected $_type;
-    protected $_storage;
-    protected $_filename;
-    protected $_filepath;
-    protected $_filesize;
-    protected $_file;
-    protected $_contentType;
-    protected $_mode;
-    protected $_theme;
+    /**
+     * @var \Omeka\Api\Adapter\MediaAdapter;
+     */
+    protected $mediaAdapter;
+
+    /**
+     * @var ?\Statistics\Api\Adapter\HitAdapter;
+     */
+    protected $hitAdapter;
+
+    /**
+     * @var string
+     */
+    protected $basePath;
+
+    /**
+     * @var Media
+     */
+    protected $media;
+
+    /**
+     * @var string
+     */
+    protected $storageType;
+
+    /**
+     * @var string
+     */
+    protected $filename;
+
+    /**
+     * @var string
+     */
+    protected $mediaType;
+
+    /**
+     * @var string
+     */
+    protected $filepath;
+
+    /**
+     * @var int
+     */
+    protected $fileSize;
+
+    public function __construct(
+        MediaAdapter $mediaAdapter,
+        ?HitAdapter $hitAdapter,
+        string $basePath
+    ) {
+        $this->mediaAdapter = $mediaAdapter;
+        $this->hitAdapter = $hitAdapter;
+        $this->basePath = $basePath;
+    }
 
     /**
      * Forward to the 'files' action
      *
      * @see self::filesAction()
      */
-    public function indexAction(): void
+    public function indexAction()
     {
-        $this->forward('files');
+        $params = $this->params()->fromRoute();
+        $params['action'] = 'files';
+        return $this->forward()->dispatch('Statistics\Controller\Download', $params);
     }
 
     /**
@@ -39,307 +90,185 @@ class DownloadController extends AbstractActionController
      */
     public function filesAction()
     {
-        // No view for this action.
-        $this->_helper->viewRenderer->setNoRender();
-
-        // Check post and throw to previous page in case of problem.
-        if (!$this->_checkPost()) {
-            $this->_helper->flashMessenger($this->translate('This file doesn’t exist.'), 'error'); // @translate
-            return $this->_gotoPreviousPage();
+        // When the media is private for the user, it is not available, in any
+        // case. This check is done automatically directly at database level.
+        $resource = $this->prepareMedia();
+        // There may be a resource, but not a file.
+        if (!$resource) {
+            throw new Exception\NotFoundException;
         }
 
-        if ($this->_getTheme() == 'public') {
-            $this->_logCurrentFile();
+        if (!$this->isAdminRequest()) {
+            $this->logCurrentFile();
         }
 
-        $this->_sendFile();
+        $this->sendFile();
     }
 
     /**
      * Log the hit on the current file.
      */
-    protected function _logCurrentFile(): void
+    protected function logCurrentFile(): void
     {
-        $hit = new Hit;
-        $hit->setCurrentRequest();
-        // The redirect to "download/files" is not useful: keep original url.
-        $hit->url = '/files/' . $this->_type . '/' . $this->_filename;
-        // No filter is needed because the record is known.
-        $hit->setRecord($this->_file);
-        $hit->setCurrentUser();
-        $hit->save();
+        $includeBots = (bool) $this->settings()->get('statistics_include_bots');
+        if (empty($includeBots)) {
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            if ($this->hitAdapter->isBot($userAgent)) {
+                return;
+            }
+        }
+
+        $data = [
+            // TODO Only local storage is logged currently.
+            'o:url' => '/files/' . $this->storageType . '/' . $this->filename,
+            'o:entity_id' => $this->media->getId(),
+            'o:entity_name' => 'media',
+        ];
+
+        $request = new Request(Request::CREATE, 'hits');
+        $request
+            ->setContent($data)
+            ->setOption('initialize', false)
+            ->setOption('finalize', false)
+            ->setOption('returnScalar', 'id')
+        ;
+        // The entity manager is automatically flushed by default.
+        $this->hitAdapter->create($request);
     }
 
     /**
-     * Helper to send file as stream or attachment.
+     * Send file as stream.
      */
-    protected function _sendFile()
+    protected function sendFile()
     {
         // Everything has been checked.
-        $filepath = $this->_getFilepath();
-        $filesize = $this->_getFilesize();
-        // Required to prepare file.
-        $this->_getFile();
-        $contentType = $this->_getContentType();
-        $mode = $this->_getMode();
+        $dispositionMode = 'inline';
 
+        /** @var \Laminas\Http\PhpEnvironment\Response $response */
         $response = $this->getResponse();
-        $response->clearBody();
-        $response->setHeader('Content-Disposition', $mode . '; filename="' . pathinfo($filepath, PATHINFO_BASENAME) . '"', true);
-        $response->setHeader('Content-Type', $contentType);
-        $response->setHeader('Content-Length', $filesize);
-        // Cache for 30 days.
-        $response->setHeader('Cache-Control', 'private, max-age=2592000, post-check=2592000, pre-check=2592000', true);
-        $response->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT', true);
+        // Write headers.
+        $response->getHeaders()
+            ->addHeaderLine(sprintf('Content-Type: %s', $this->mediaType))
+            ->addHeaderLine(sprintf('Content-Disposition: %s; filename="%s"', $dispositionMode, pathinfo($this->filepath, PATHINFO_BASENAME)))
+            ->addHeaderLine(sprintf('Content-Length: %s', $this->fileSize))
+            ->addHeaderLine('Content-Transfer-Encoding: binary')
+            // Use this to open files directly.
+            // Cache for 30 days.
+            ->addHeaderLine('Cache-Control: private, max-age=2592000, post-check=2592000, pre-check=2592000')
+            ->addHeaderLine(sprintf('Expires: %s', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT'));
 
-        // To avoid big file issues, clear buffers and send headers separately.
+        // Send headers separately to handle large files.
+        $response->sendHeaders();
+
+        // TODO Use Laminas stream response.
+
+        // Clears all active output buffers to avoid memory overflow.
+        $response->setContent('');
         while (ob_get_level()) {
             ob_end_clean();
         }
-        $response->sendHeaders();
-        readfile($filepath);
-        return true;
+        readfile($this->filepath);
+
+        // TODO Fix issue with session. See readme of module XmlViewer.
+        ini_set('display_errors', '0');
+
+        // Return response to avoid default view rendering and to manage events.
+        return $response;
     }
 
     /**
-     * Check if the post is good and save results.
-     *
-     * @return bool
+     * Check if the request is fine and save results.
      */
-    protected function _checkPost()
+    protected function prepareMedia(): ?Media
     {
-        if (!$this->_getStorage()) {
+        $this->media = null;
+        $this->storageType = null;
+        $this->filename = null;
+        $this->mediaType = null;
+        $this->filepath = null;
+        $this->fileSize = null;
+
+        $this->filename = $this->params()->fromRoute('filename');
+        if (!$this->filename) {
+            return null;
+        }
+
+        // For compatibility with module ArchiveRepertory, don't take the
+        // filename, but remove the extension.
+        // $storageId = pathinfo($filename, PATHINFO_FILENAME);
+        $extension = pathinfo($this->filename, PATHINFO_EXTENSION);
+        $storageId = mb_strlen($extension)
+            ? mb_substr($this->filename, 0, -mb_strlen($extension) - 1)
+            : $this->filename;
+
+        // "storage_id" is not available through default api, so use core entity
+        // manager. Nevertheless, the call to the api allows to check rights.
+        if (!$storageId) {
+            return null;
+        }
+
+        try {
+            $this->media = $this->mediaAdapter->findEntity(['storageId' => $storageId]);
+        } catch (\Omeka\Api\Exception\NotFoundException $e) {
+            return null;
+        }
+
+        $this->storageType = $this->params()->fromRoute('type');
+        if ($this->storageType === 'original') {
+            if (!$this->media->hasOriginal()) {
+                return null;
+            }
+            // Reset the filename for case sensitivity purpose.
+            $this->filename = $this->media->getFilename();
+        } elseif (!$this->media->hasThumbnails()) {
+            return null;
+        } else {
+            $this->filename = $storageId . '.jpg';
+        }
+
+        $this->filepath = sprintf('%s/%s/%s', $this->basePath, $this->storageType, $this->filename);
+        if (!is_readable($this->filepath)) {
+            return null;
+        }
+
+        if ($this->storageType === 'original') {
+            $this->fileSize = (int) $this->media->getSize();
+            $this->mediaType = $this->media->getMediaType();
+        } else {
+            $this->fileSize = (int) filesize($this->filepath);
+            $this->mediaType = 'image/jpeg';
+        }
+
+        return $this->media;
+    }
+
+    /**
+     * Check if the file is fetched from an admin front-end.
+     */
+    protected function isAdminRequest(): bool
+    {
+        // It's not simple to determine from server if the request comes from
+        // a visitor on the site or something else.
+        // So use the referrer and the identity.
+        if (!$this->identity()) {
             return false;
         }
-
-        if (!$this->_getFilename()) {
+        $referrer = (string) $this->getRequest()->getServer('HTTP_REFERER');
+        if (!$referrer) {
             return false;
         }
-
-        if (!$this->_getFilepath()) {
-            return false;
-        }
-
-        if (!$this->_getFilesize()) {
-            return false;
-        }
-
-        if (!$this->_getFile()) {
-            return false;
-        }
-
-        if (!$this->_getContentType()) {
-            return false;
-        }
-
-        if (!$this->_getMode()) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Get and set type (generally original, sometimes fullsize).
-     *
-     * @internal The type is not checked, but if not authorized, storage will
-     * return an error.
-     *
-     * @return string ("original" by default)
-     */
-    protected function _getType()
-    {
-        if (is_null($this->_type)) {
-            $this->_type = $this->getRequest()->getParam('type');
-
-            // Default type.
-            if (empty($this->_type)) {
-                $this->_type = 'original';
-            }
-        }
-
-        return $this->_type;
-    }
-
-    /**
-     * Get, check and set type of storage.
-     *
-     * @return string Path to the storage of the selected type of file.
-     */
-    protected function _getStorage()
-    {
-        if (is_null($this->_storage)) {
-            $type = $this->_getType();
-
-            // This is used to get list of storage path. Is there a better way?
-            // getPathByType() is not secure.
-            $file = new File;
-            try {
-                $storagePath = $file->getStoragePath($type);
-            } catch (RuntimeException $e) {
-                $this->_storage = false;
-                return false;
-            }
-            $this->_storage = ($type == 'original')
-                ? substr($storagePath, 0, strlen($storagePath) - 1)
-                : substr($storagePath, 0, strlen($storagePath) - strlen(File::DERIVATIVE_EXT) - 2);
-        }
-
-        return $this->_storage;
-    }
-
-    /**
-     * Get and set filename.
-     *
-     * @internal The filename is not checked, but if not existing, filepath will
-     * return an error.
-     *
-     * @return string Filename.
-     */
-    protected function _getFilename()
-    {
-        if (is_null($this->_filename)) {
-            $this->_filename = $this->getRequest()->getParam('filename');
-        }
-
-        return $this->_filename;
-    }
-
-    /**
-     * Get and set filepath.
-     *
-     * @return string Path to the file.
-     */
-    protected function _getFilepath()
-    {
-        if (is_null($this->_filepath)) {
-            $filename = $this->_getFilename();
-            $storage = $this->_getStorage();
-            $storagePath = FILES_DIR . DIRECTORY_SEPARATOR . $this->_storage . DIRECTORY_SEPARATOR;
-            $filepath = realpath($storagePath . $filename);
-            if (strpos($filepath, $storagePath) !== 0) {
-                return false;
-            }
-            $this->_filepath = $filepath;
-        }
-
-        return $this->_filepath;
-    }
-
-    /**
-     * Get and set file size. This allows to check if file really exists.
-     *
-     * @return int Length of the file.
-     */
-    protected function _getFilesize()
-    {
-        if (is_null($this->_filesize)) {
-            $filepath = $this->_getFilepath();
-            $this->_filesize = @filesize($filepath);
-        }
-
-        return $this->_filesize;
-    }
-
-    /**
-     * Set and get file object from the filename. Rights access are checked.
-     *
-     * @return File|null
-     */
-    protected function _getFile()
-    {
-        if (is_null($this->_file)) {
-            $filename = $this->_getFilename();
-            if ($this->_getStorage() == 'original') {
-                $this->_file = get_db()->getTable('File')->findBySql('filename = ?', [$filename], true);
-            }
-            // Get a derivative: this is functional only because filenames are
-            // hashed.
-            else {
-                $originalFilename = substr($filename, 0, strlen($filename) - strlen(File::DERIVATIVE_EXT) - 1);
-                $this->_file = get_db()->getTable('File')->findBySql('filename LIKE ?', [$originalFilename . '%'], true);
-            }
-
-            // Check rights: if the file belongs to a public item.
-            if (empty($this->_file)) {
-                $this->_file = false;
-            } else {
-                $item = $this->_file->getItem();
-                if (empty($item)) {
-                    $this->_file = false;
-                }
-            }
-        }
-
-        return $this->_file;
-    }
-
-    /**
-     * Set and get file object from the filename. Rights access are checked.
-     *
-     * @return File|null
-     */
-    protected function _getContentType()
-    {
-        if (is_null($this->_contentType)) {
-            $type = $this->_getType();
-            if ($type == 'original') {
-                $file = $this->_getFile();
-                $this->_contentType = $file->mime_type;
-            } else {
-                $this->_contentType = 'image/jpeg';
-            }
-        }
-
-        return $this->_contentType;
-    }
-
-    /**
-     * Get and set sending mode (always inline).
-     *
-     * @return string Disposition 'inline' (default) or 'attachment'.
-     */
-    protected function _getMode()
-    {
-        if (is_null($this->_mode)) {
-            $this->_mode = 'inline';
-        }
-
-        return $this->_mode;
-    }
-
-    /**
-     * Get and set theme via referrer (public if unknow or unidentified user).
-     *
-     * @return string "public" or "admin".
-     */
-    protected function _getTheme()
-    {
-        if (is_null($this->_theme)) {
-            // Default is set to public.
-            $this->_theme = 'public';
-            // This allows quick control if referrer is not set.
-            if (current_user()) {
-                $referrer = (string) $this->getRequest()->getServer('HTTP_REFERER');
-                if (strpos($referrer, WEB_ROOT . '/admin/') === 0) {
-                    $this->_theme = 'admin';
-                }
-            }
-        }
-
-        return $this->_theme;
+        $urlAdminTop = $this->url()->fromRoute('admin', [], ['force_canonical' => true]) . '/';
+        return strpos($referrer, $urlAdminTop) === 0;
     }
 
     /**
      * Redirect to previous page.
      */
-    protected function _gotoPreviousPage(): void
+    protected function gotoPreviousPage()
     {
-        $referrer = $this->getRequest()->getServer('HTTP_REFERER');
-        if ($referrer) {
-            $this->redirect($referrer);
-        } else {
-            $this->redirect(WEB_ROOT);
-        }
+        return $this->redirect()->toUrl(
+            $this->getRequest()->getServer('HTTP_REFERER')
+               ?: $this->url()->fromRoute('top')
+        );
     }
 }

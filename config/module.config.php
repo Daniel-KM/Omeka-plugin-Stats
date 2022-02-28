@@ -35,8 +35,10 @@ return [
     'controllers' => [
         'invokables' => [
             'Statistics\Controller\Browse' => Controller\BrowseController::class ,
-            'Statistics\Controller\Download' => Controller\DownloadController::class,
             'Statistics\Controller\Summary' => Controller\SummaryController::class,
+        ],
+        'factories' => [
+            'Statistics\Controller\Download' => Service\Controller\DownloadControllerFactory::class,
         ],
     ],
     // TODO Merge bulk navigation and route with module BulkImport (require a main page?).
