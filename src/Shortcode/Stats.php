@@ -8,7 +8,7 @@ class Stats extends AbstractShortcode
 {
     public function render(array $args = []): string
     {
-        if ($this->shortcodeName === 'stats_total') {
+        if ($this->shortcodeName === 'stats' || $this->shortcodeName === 'stats_total') {
             return $this->renderStatsTotal($args);
         } elseif ($this->shortcodeName === 'stats_position') {
             return $this->renderStatsPosition($args);
@@ -29,29 +29,32 @@ class Stats extends AbstractShortcode
         $type = $args['type'] ?? null;
 
         // TODO There may be multiple resource names.
-        $resourceName = $args['resource'] ?? $args['resource_type'] ?? $args['record_type'] ?? null;
+        $resourceName = $args['resource'] ?? $args['resource_type'] ?? $args['record_type'] ?? $args['entity_name'] ?? null;
         if ($resourceName) {
             $resourceName = strtolower($resourceName);
         }
 
         $resourceId = $resourceName
-            ? $args['id'] ?? $args['resource_id'] ?? $args['record_id'] ?? null
+            ? $args['id'] ?? $args['resource_id'] ?? $args['record_id'] ?? $args['entity_id'] ?? null
             : null;
+
+        /** @var \Statistics\View\Helper\Statistic $statistic */
+        $statistic = $this->view->statistic();
 
         // Search by resource.
         if ($resourceId) {
             $result = $type === 'download'
-                ? $this->view->statistic()->totalDownload($resourceId)
-                : $this->view->statistic()->totalResource($resourceName, $resourceId);
+                ? $statistic->totalDownload($resourceId)
+                : $statistic->totalResource($resourceName, $resourceId);
         }
         // Search by resource type.
         elseif ($resourceName) {
-            $result = $this->view->statistic()->totalResourceType($resourceName);
+            $result = $statistic->totalResourceType($resourceName);
         }
         // Search by url.
         else {
-            $url = $args['url'] ?? $this->view->url(null, [], true);
-            $result = $this->view->statistic()->totalPage($url);
+            $url = $args['url'] ?? null;
+            $result = $statistic->totalPage($url);
         }
 
         // Don't return null.
@@ -77,16 +80,19 @@ class Stats extends AbstractShortcode
             ? $args['id'] ?? $args['resource_id'] ?? $args['record_id'] ?? null
             : null;
 
+        /** @var \Statistics\View\Helper\Statistic $statistic */
+        $statistic = $this->view->statistic();
+
         // Search by resource.
         if ($resourceId) {
             $result = $type === 'download'
-                ? $this->view->statistic()->positionDownload($resourceId)
-                : $this->view->statistic()->positionResource($resourceName, $resourceId);
+                ? $statistic->positionDownload($resourceId)
+                : $statistic->positionResource($resourceName, $resourceId);
         }
         // Search by url.
         else {
-            $url = $args['url'] ?? $this->view->url(null, [], true);
-            $result = $this->view->statistic()->positionPage($url);
+            $url = $args['url'] ?? null;
+            $result = $statistic->positionPage($url);
         }
 
         // Don't return null.
@@ -105,10 +111,13 @@ class Stats extends AbstractShortcode
         $limit = isset($args['number']) ? (int) $args['number'] : 10;
         $offset = isset($args['offset']) ? (int) $args['offset'] : null;
 
+        /** @var \Statistics\View\Helper\Statistic $statistic */
+        $statistic = $this->view->statistic();
+
         return $type
             // Search by resource type.
-            ? $this->view->statistic()->viewedResources($type, $sort, null, $limit, $offset, true)
+            ? $statistic->viewedResources($type, $sort, null, $limit, $offset, true)
             // Search in all pages.
-            : $this->view->statistic()->viewedPages(null, $sort, null, $limit, $offset, true);
+            : $statistic->viewedPages(null, $sort, null, $limit, $offset, true);
     }
 }
