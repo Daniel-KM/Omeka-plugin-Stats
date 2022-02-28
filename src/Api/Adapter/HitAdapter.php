@@ -33,6 +33,11 @@ class HitAdapter extends AbstractEntityAdapter
         'referrer' => 'referrer',
         'user_agent' => 'userAgent',
         'accept_language' => 'acceptLanguage',
+        // TODO Clarify query for sort.
+        'entityName' => 'entityName',
+        'entityId' => 'entityId',
+        'userAgent' => 'userAgent',
+        'acceptLanguage' => 'acceptLanguage',
         'created' => 'created',
     ];
 
@@ -270,13 +275,15 @@ class HitAdapter extends AbstractEntityAdapter
         }
 
         if (isset($query['not_empty'])
-            && in_array($query['not_empty'], ['referrer', 'query', 'user_agent', 'accept_language'])
+            && in_array($query['not_empty'], ['query', 'referrer', 'user_agent', 'accept_language', 'userAgent', 'acceptLanguage'])
         ) {
             $columns = [
-                'referrer' => 'referrer',
                 'query' => 'query',
+                'referrer' => 'referrer',
                 'user_agent' => 'userAgent',
                 'accept_language' => 'acceptLanguage',
+                'userAgent' => 'userAgent',
+                'acceptLanguage' => 'acceptLanguage',
             ];
             $qb->andWhere($expr->neq(
                 'omeka_root.' . $columns[$query['not_empty']],
@@ -322,15 +329,23 @@ class HitAdapter extends AbstractEntityAdapter
         }
     }
 
-    public function sortBy(QueryBuilder $qb, array $query): void
+    public function sortQuery(QueryBuilder $qb, array $query): void
     {
         if (isset($query['sort_field']) && is_array($query['sort_field'])) {
             foreach ($query['sort_field'] as $by => $order) {
-                parent::sortQuery($qb, [
-                    'sort_by' => $by,
-                    'sort_order' => $order,
-                ]);
+                if ($by === 'hits') {
+                    $qb->addOrderBy('hits', $order);
+                } else {
+                    parent::sortQuery($qb, [
+                        'sort_by' => $by,
+                        'sort_order' => $order,
+                    ]);
+                }
             }
+        }
+        // Sort by "hits" is not a sort by field, but a sort by count.
+        if (isset($query['sort_by']) && $query['sort_by'] === 'hits') {
+            $qb->addOrderBy('hits', $query['sort_order'] ?? 'asc');
         }
         parent::sortQuery($qb, $query);
     }
@@ -637,6 +652,11 @@ class HitAdapter extends AbstractEntityAdapter
             'media' => 'media',
             'site_page' => 'site_pages',
             'annotation' => 'annotations',
+            'Item' => 'items',
+            'ItemSet' => 'item_sets',
+            'Media' => 'media',
+            'SitePage' => 'site_pages',
+            'Annotation' => 'annotations',
             'Omeka\Controller\Site\Item' => 'items',
             'Omeka\Controller\Site\ItemSet' => 'item_sets',
             'Omeka\Controller\Site\Media' => 'media',

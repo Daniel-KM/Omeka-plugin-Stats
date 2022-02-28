@@ -33,9 +33,20 @@ class StatAdapter extends AbstractEntityAdapter
         'url' => 'url',
         'entity_name' => 'entityName',
         'entity_id' => 'entityId',
+        // TODO Clarify query for sort.
+        'hits' => 'totalHits',
+        'anonymous' => 'totalHitsAnonymous',
+        'identified' => 'totalHitsIdentified',
+        'hits_anonymous' => 'totalHitsAnonymous',
+        'hits_identified' => 'totalHitsIdentified',
         'total_hits' => 'totalHits',
         'total_hits_anonymous' => 'totalHitsAnonymous',
         'total_hits_identified' => 'totalHitsIdentified',
+        'hitsAnonymous' => 'totalHitsAnonymous',
+        'hitsIdentified' => 'totalHitsIdentified',
+        'totalHits' => 'totalHits',
+        'totalHitsAnonymous' => 'totalHitsAnonymous',
+        'totalHitsIdentified' => 'totalHitsIdentified',
         'created' => 'created',
         'modified' => 'modified',
     ];
@@ -196,7 +207,7 @@ class StatAdapter extends AbstractEntityAdapter
         }
     }
 
-    public function sortBy(QueryBuilder $qb, array $query): void
+    public function sortQuery(QueryBuilder $qb, array $query): void
     {
         if (isset($query['sort_field']) && is_array($query['sort_field'])) {
             foreach ($query['sort_field'] as $by => $order) {
