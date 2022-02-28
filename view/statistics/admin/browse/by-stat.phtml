@@ -20,8 +20,6 @@ $this->headLink()->prependStylesheet($assetUrl('css/statistics.css', 'Statistics
 $this->htmlElement('body')->appendAttribute('class', 'statistics browse');
 
 $totalResults = $this->pagination()->getPaginator()->getTotalCount();
-$currentPage = $this->params()->fromQuery('page');
-$limit = $this->setting('pagination_per_page', 100);
 $currentUrl = $urlHelper(null, [], true);
 $basePath = $this->basePath();
 $resource = null;
@@ -33,10 +31,10 @@ $resource = null;
 
 <?php if ($stats): ?>
 <div class="browse-controls">
-    <?= $pagination = $this->pagination(null, $totalResults, $currentPage, $limit) ?>
+    <?= $pagination = $this->pagination() ?>
     <?php //= $this->hyperlink($translate('Advanced search'), $urlHelper(null, ['action' => 'search'], ['query' => $this->params()->fromQuery()], true), ['class' => 'advanced-search']) ?>
     <?= $this->partial('common/statistics-quick-filters') ?>
-    <?php // echo $this->sortSelector($sortHeadings); ?>
+    <?php //= $this->sortSelector($sortHeadings) ?>
 </div>
 <table class="tablesaw statistics-table" data-tablesaw-mode="stack">
     <thead>
@@ -57,13 +55,10 @@ $resource = null;
                 <span><?= $translate('Dedicated resource') ?></span>
             </th>
             <th>
-                <a href="<?= $currentUrl . '?sort_by=resource_type' ?>"><?= $translate('Record type') ?></a>
+                <a href="<?= $currentUrl . '?sort_by=resource_type' ?>"><?= $translate('Resource type') ?></a>
             </th>
             <th>
                 <a href="<?= $currentUrl . '?sort_by=modified' ?>"><?= $translate('Date') ?></a>
-            </th>
-            <th>
-                <a href="<?= $currentUrl . '?sort_by=hits' ?>"><?= $translate('Hits') ?></a>
             </th>
         </tr>
     </thead>
@@ -97,7 +92,7 @@ $resource = null;
                 <?php endif; ?>
             </td>
             <td>
-                <?= $escape($stat->modified()->format('YYYY-MM-dd HH:mm:ss')) ?>
+                <?= $escape($stat->modified()->format('Y-m-j H:i:s')) ?>
             </td>
         </tr>
         <?php endforeach; ?>
@@ -108,10 +103,10 @@ $resource = null;
     <?php $totalStats = $this->api()->search('stats')->getTotalResults(); ?>
     <div class="no-resources">
     <?php if (!$totalStats): ?>
-        <p><?= $translate('Omeka could not find any stats.') ?></p>
+        <p><?= $translate('Omeka could not find any statistics.') ?></p>
     <?php else: ?>
         <p><?= sprintf($translate('The query searched %s rows and returned no results.'), $totalStats) ?></p>
-        <p><a href="<?= url('admin/statistics/default', ['action' => 'by-' . $type], true) ?>"><?= $translate('See all stats.') ?></a></p>
+        <p><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-' . $type], true) ?>"><?= $translate('See all statistics.') ?></a></p>
     <?php endif; ?>
     </div>
 <?php endif; ?>

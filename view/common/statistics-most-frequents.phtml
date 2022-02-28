@@ -1,7 +1,7 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Statistics\Api\Representation\StatRepresentation[] $result
+ * @var array $results
  * @var string $field
  * @var string $userStatus
  */
@@ -10,15 +10,15 @@ $plugins = $this->getHelperPluginManager();
 $translate = $plugins->get('translate');
 ?>
 
-<?php if (empty($result)): ?>
+<?php if (empty($results)): ?>
 
 <p><?= $translate('None') ?></p>
 
 <?php else: ?>
 
 <ol>
-    <?php foreach ($result as $position => $stat): ?>
-    <li><?= sprintf($translate('%s (%d views)'), $stat->field($field), $stat->totalHits($userStatus)) ?></li>
+    <?php foreach ($results as $position => $result): ?>
+    <li><?= sprintf($translate('%s (%d views)'), $result[$field], $result['hits']) ?></li>
     <?php endforeach; ?>
 </ol>
 

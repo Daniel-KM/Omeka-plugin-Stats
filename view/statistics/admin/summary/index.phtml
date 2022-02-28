@@ -1,31 +1,50 @@
 <?php
-$pageTitle = __('Stats');
-echo head(array(
-    'title' => $pageTitle,
-    'bodyclass' => 'stats index',
-    'content_class' => 'horizontal-nav',
-));
-echo common('statistics-nav');
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var array $results
+ * @var string $userStatus
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$assetUrl = $plugins->get('assetUrl');
+$translate = $plugins->get('translate');
+$urlHelper = $plugins->get('url');
+$escapeAttr = $plugins->get('escapeHtmlAttr');
+
+$this->headLink()->prependStylesheet($assetUrl('css/statistics.css', 'Statistics'));
+
+$this->htmlElement('body')->appendAttribute('class', 'statistics index');
+
+$currentPage = $this->params()->fromQuery('page');
+$limit = $this->setting('pagination_per_page', 100);
+$currentUrl = $urlHelper(null, [], true);
+$basePath = $this->basePath();
+$resource = null;
 ?>
-<div id="primary">
-    <?php echo flash(); ?>
-    <h2><?php echo  __('Total Hits: %d [%d anonymous / %d identified]',
-        $results['all']['total'],
-        $results['all']['anonymous'],
-        $results['all']['identified']);
-    ?></h2>
-    <h3><?php echo  __('Today: %d [%d / %d]',
-        $results['today']['total'],
-        $results['today']['anonymous'],
-        $results['today']['identified']);
-    ?></h3>
+
+<?= $this->pageTitle(sprintf($translate('Statistics (%s total)'), $results['all']['total']), 1, $translate('Statistics')) ?>
+
+<?= $this->partial('common/statistics-nav') ?>
+
+<h2><?= sprintf($translate('Total Hits: %d [%d anonymous / %d identified]'),
+    $results['all']['total'],
+    $results['all']['anonymous'],
+    $results['all']['identified'])
+?></h2>
+<h3><?= sprintf($translate('Today: %d [%d / %d]'),
+    $results['today']['total'],
+    $results['today']['anonymous'],
+    $results['today']['identified'])
+?></h3>
+
 <section class="three columns alpha">
     <div class="panel">
-        <h2><?php echo __('History'); ?></h2>
+        <h2><?= $translate('History') ?></h2>
         <ul>
         <?php foreach ($results['history'] as $label => $value): ?>
-            <li><?php
-                printf('%s: %d [%d / %d]', $label, $value['total'], $value['anonymous'], $value['identified']);
+            <li><?=
+                sprintf('%s: %d [%d / %d]', $label, $value['total'], $value['anonymous'], $value['identified'])
             ?></li>
         <?php endforeach; ?>
         </ul>
@@ -33,11 +52,11 @@ echo common('statistics-nav');
 </section>
 <section class="four columns">
     <div class="panel">
-        <h2><?php echo __('Current'); ?></h2>
+        <h2><?= $translate('Current') ?></h2>
         <ul>
         <?php foreach ($results['current'] as $label => $value): ?>
-            <li><?php
-                printf('%s: %d [%d / %d]', $label, $value['total'], $value['anonymous'], $value['identified']);
+            <li><?=
+                sprintf('%s: %d [%d / %d]', $label, $value['total'], $value['anonymous'], $value['identified'])
             ?></li>
         <?php endforeach; ?>
         </ul>
@@ -45,11 +64,11 @@ echo common('statistics-nav');
 </section>
 <section class="three columns omega">
     <div class="panel">
-        <h2><?php echo __('Rolling Period'); ?></h2>
+        <h2><?= $translate('Rolling Period') ?></h2>
         <ul>
         <?php foreach ($results['rolling'] as $label => $value): ?>
-            <li><?php
-                printf('%s: %d [%d / %d]', $label, $value['total'], $value['anonymous'], $value['identified']);
+            <li><?=
+                sprintf('%s: %d [%d / %d]', $label, $value['total'], $value['anonymous'], $value['identified'])
             ?></li>
         <?php endforeach; ?>
         </ul>
@@ -58,18 +77,17 @@ echo common('statistics-nav');
 <?php if (isset($results['most_viewed_pages'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
-        <h2><a href="<?php echourl('admin/statistics/browse/by-page'); ?>"><?php echo __('Most viewed public pages'); ?></a></h2>
+        <h2><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-page']) ?>"><?= $translate('Most viewed public pages') ?></a></h2>
         <?php if (empty($results['most_viewed_pages'])): ?>
-        <p><?php echo __('None'); ?></p>
+        <p><?= $translate('None') ?></p>
         <?php else: ?>
         <ol>
         <?php foreach ($results['most_viewed_pages'] as $position => $stat): ?>
-            <li><?php
-                echo __('%s (%d views [%d / %d])',
-                     '<a href="' . WEB_ROOT . $stat->url . '">' . $stat->url . '</a>',
-                     $stat->hits,
-                     $stat->hits_anonymous,
-                     $stat->hits_identified);
+            <li><?= sprintf($translate('%s (%d views [%d / %d])'),
+                '<a href="' . $escapeAttr($basePath . $stat->hitUrl()) . '">' . $escape($stat->hitUrl()) . '</a>',
+                $stat->totalHits(),
+                $stat->totalHits('anonymous'),
+                $stat->totalHits('identified'))
             ?></li>
         <?php endforeach; ?>
         </ol>
@@ -77,21 +95,20 @@ echo common('statistics-nav');
     </div>
 </section>
 <?php endif; ?>
-<?php if (isset($results['most_viewed_records'])): ?>
+<?php if (isset($results['most_viewed_resources'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
-        <h2><a href="<?php echourl('admin/statistics/browse/by-record'); ?>"><?php echo __('Most viewed public records'); ?></a></h2>
-        <?php if (empty($results['most_viewed_records'])): ?>
-        <p><?php echo __('None'); ?></p>
+        <h2><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-resource']) ?>"><?= $translate('Most viewed public records') ?></a></h2>
+        <?php if (empty($results['most_viewed_resources'])): ?>
+        <p><?= $translate('None') ?></p>
         <?php else: ?>
         <ol>
-        <?php foreach ($results['most_viewed_records'] as $position => $stat): ?>
-            <li><?php
-                echo __('%s (%d views [%d / %d])',
-                    $this->statistic()->link_to_record($stat->Record),
-                    $stat->hits,
-                    $stat->hits_anonymous,
-                    $stat->hits_identified);
+        <?php foreach ($results['most_viewed_resources'] as $position => $stat): ?>
+            <li><?= sprintf($translate('%s (%d views [%d / %d])'),
+                ($resource = $stat->entityResource()) ? $resource->linkPretty() : sprintf('%s #%s (unavailable)', $translate($stat->entityName()), $stat->entityName()),
+                $stat->totalHits(),
+                $stat->totalHits('anonymous'),
+                $stat->totalHits('identified'))
             ?></li>
         <?php endforeach; ?>
         </ol>
@@ -99,21 +116,20 @@ echo common('statistics-nav');
     </div>
 </section>
 <?php endif; ?>
-<?php if (isset($results['most_viewed_collections'])): ?>
+<?php if (isset($results['most_viewed_item_sets'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
-        <h2><a href="<?php echourl('admin/statistics/browse/by-record'); ?>"><?php echo __('Most viewed public collections'); ?></a></h2>
-        <?php if (empty($results['most_viewed_collections'])): ?>
-        <p><?php echo __('None'); ?></p>
+        <h2><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-item-set']) ?>"><?= $translate('Most viewed public collections') ?></a></h2>
+        <?php if (empty($results['most_viewed_item_sets'])): ?>
+        <p><?= $translate('None') ?></p>
         <?php else: ?>
         <ol>
-        <?php foreach ($results['most_viewed_collections'] as $position => $stat): ?>
-            <li><?php
-                echo __('%s (%d views [%d / %d])',
-                    $this->statistic()->link_to_record($stat->Record),
-                    $stat->hits,
-                    $stat->hits_anonymous,
-                    $stat->hits_identified);
+        <?php foreach ($results['most_viewed_item_sets'] as $position => $stat): ?>
+            <li><?= sprintf($translate('%s (%d views [%d / %d])'),
+                ($resource = $stat->entityResource()) ? $resource->linkPretty() : sprintf('%s #%s (unavailable)', $translate($stat->entityName()), $stat->entityName()),
+                $stat->totalHits(),
+                $stat->totalHits('anonymous'),
+                $stat->totalHits('identified'))
             ?></li>
         <?php endforeach; ?>
         </ol>
@@ -124,18 +140,17 @@ echo common('statistics-nav');
 <?php if (isset($results['most_viewed_downloads'])): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
-        <h2><a href="<?php echourl('admin/statistics/browse/by-download'); ?>"><?php echo __('Most downloaded files'); ?></a></h2>
+        <h2><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-download']) ?>"><?= $translate('Most downloaded files') ?></a></h2>
         <?php if (empty($results['most_viewed_downloads'])): ?>
-        <p><?php echo __('None'); ?></p>
+        <p><?= $translate('None') ?></p>
         <?php else: ?>
         <ol>
         <?php foreach ($results['most_viewed_downloads'] as $position => $stat): ?>
-            <li><?php
-                echo __('%s (%d downloads [%d / %d])',
-                     '<a href="' . WEB_ROOT . $stat->url . '">' . $stat->url . '</a>',
-                     $stat->hits,
-                     $stat->hits_anonymous,
-                     $stat->hits_identified);
+            <li><?= sprintf($translate('%s (%d downloads [%d / %d])'),
+                '<a href="' . $escapeAttr($basePath . $stat->hitUrl()) . '">' . $escape($stat->hitUrl()) . '</a>',
+                $stat->totalHits(),
+                $stat->totalHits('anonymous'),
+                $stat->totalHits('identified'))
             ?></li>
         <?php endforeach; ?>
         </ol>
@@ -144,24 +159,21 @@ echo common('statistics-nav');
 </section>
 <?php endif; ?>
 <?php if (isset($results['most_frequent_fields'])):
-    $labels = array(
-        'referrer' => __('Most frequent external referrers'),
-        'query' =>__('Most frequent queries'),
-        'accept_language' => __('Most frequent accepted languages'),
-        'user_agent' => __('Most frequent browsers'),
-    );
+    $labels = [
+        'referrer' => $translate('Most frequent external referrers'),
+        'query' =>$translate('Most frequent queries'),
+        'accept_language' => $translate('Most frequent accepted languages'),
+        'user_agent' => $translate('Most frequent browsers'),
+    ];
     foreach ($results['most_frequent_fields'] as $field => $result): ?>
 <section class="ten columns alpha omega">
     <div class="panel">
-        <h2><a href="<?php echourl('admin/statistics/browse/by-field?field=' . $field); ?>"><?php echo $labels[$field]; ?></a></h2>
+        <h2><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-field'], ['query' => ['field' => $field]]) ?>"><?= $labels[$field]; ?></a></h2>
         <?= $this->partial('common/statistics-most-frequents', [
-            'result' => $result,
+            'results' => $result,
             'field' => $field,
         ]) ?>
     </div>
 </section>
     <?php endforeach;
 endif; ?>
-<?php fire_plugin_hook('stats_summary', array('view' => $this)); ?>
-</div>
-<?php echo foot(); ?>

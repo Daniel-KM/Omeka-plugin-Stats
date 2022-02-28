@@ -1,10 +1,9 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Statistics\Api\Representation\StatRepresentation[] $resources
- * @var \Statistics\Api\Representation\StatRepresentation[] $stats
- * @var \Statistics\Api\Representation\HitRepresentation[] $hits
- * @var string $userStatus
+ * @var array $results
+ * @var string $type "item-set"
+ * @var array $hits
  * @var int[] $years
  * @var int $yearFilter
  * @var int $monthFilter
@@ -13,13 +12,16 @@
 $plugins = $this->getHelperPluginManager();
 $assetUrl = $plugins->get('assetUrl');
 $translate = $plugins->get('translate');
+$urlHelper = $plugins->get('url');
 
-$this->headLink()->prependStylesheet($assetUrl('css/stats.css', 'Stats'));
+$this->headLink()->prependStylesheet($assetUrl('css/statistics.css', 'Stats'));
 
-$this->htmlElement('body')->appendAttribute('class', 'stats browse');
+$this->htmlElement('body')->appendAttribute('class', 'statistics browse');
+
+$currentUrl = $urlHelper(null, [], true);
 ?>
 
-<?= $this->pageTitle($translate('Stats'), 1, $translate('By Collection')) ?>
+<?= $this->pageTitle($translate('By item set'), 1, $translate('Statistics')) ?>
 
 <?= $this->partial('common/statistics-nav') ?>
 
@@ -27,7 +29,7 @@ $this->htmlElement('body')->appendAttribute('class', 'stats browse');
     <select name="year">
         <option value=""><?= $translate('All years') ?></option>
         <?php foreach ($years as $year): ?>
-            <option value="<?= $year ?>" <?php if ($yearFilter == $year): ?>selected="selected"<?php endif; ?>><?= $year ?></option>
+            <option value="<?= $year ?>"<?= $yearFilter == $year ? ' selected="selected"' : '' ?>><?= $year ?></option>
         <?php endforeach; ?>
     </select>
 
@@ -48,39 +50,40 @@ $this->htmlElement('body')->appendAttribute('class', 'stats browse');
     <select name="month">
         <option value=""><?= $translate('All months') ?></option>
         <?php foreach ($months as $i => $month): ?>
-            <option value="<?= $i + 1 ?>"<?php if ($monthFilter == $i + 1): ?>selected="selected"<?php endif; ?>><?= $month ?></option>
+            <option value="<?= $i + 1 ?>"<?= $monthFilter == $i + 1 ? ' selected="selected"' : '' ?>><?= $month ?></option>
         <?php endforeach; ?>
     </select>
     <button type="submit"><?= $translate('Filter') ?></button>
 </form>
 
-<?php if (count($stats)): ?>
-    <table class="statistics-table">
+<?php if (count($results)): ?>
+<table class="tablesaw statistics-table" data-tablesaw-mode="stack">
     <thead>
         <tr>
-            <?php
-            $browseHeadings[$translate('Item set')] = 'item-set';
-            $browseHeadings[$translate('Hits')] = 'hits';
-            echo browse_sort_links($browseHeadings, array('link_tag' => 'th scope="col"', 'list_tag' => ''));
-            ?>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=item-set' ?>"><?= $translate('Item set') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=hits' ?>"><?= $translate('Hits') ?></a>
+            </th>
         </tr>
     </thead>
     <tbody>
-<?php foreach ($hits as $position => $hit): ?>
-        <tr class="statistics-stat <?= $position % 2 === 0 ? 'odd' : 'even' ?>">
-            <td class="statistics-field"><?= $hit->field('item-set') ?></td>
-            <td class="statistics-hits"><?= $hit->totalPage() ?></td>
+<?php foreach ($results as $position => $result): ?>
+        <tr class="statistics-stat">
+            <td class="statistics-field"><?= $result['item-set'] ?></td>
+            <td class="statistics-hits"><?= $result['hits'] ?></td>
         </tr>
 <?php endforeach; ?>
     </tbody>
-    </table>
+</table>
 <?php else: ?>
     <br class="clear" />
     <?php $totalHits = $this->api()->search('hits')->getTotalResults(); ?>
     <?php if (!$totalHits): ?>
         <h2><?= $translate('There is no hit yet.') ?></h2>
     <?php else: ?>
-        <p><?= $translate('The query searched %s hits and returned no results.', $totalHits); ?></p>
-        <p><a href="<?= $this->url('admin/statistics/default', ['action' => 'by-collection'], true) ?>"><?= $translate('See all stats.') ?></a></p>
+        <p><?= sprintf($translate('The query searched %s hits and returned no results.'), $totalHits) ?></p>
+        <p><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-item-set'], true) ?>"><?= $translate('See all statistics.') ?></a></p>
     <?php endif; ?>
 <?php endif; ?>

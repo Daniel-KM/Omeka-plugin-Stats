@@ -1,74 +1,76 @@
 <?php
 /**
  * @var \Laminas\View\Renderer\PhpRenderer $this
- * @var \Statistics\Api\Representation\StatRepresentation[] $resources
- * @var \Statistics\Api\Representation\StatRepresentation[] $stats
- * @var \Statistics\Api\Representation\HitRepresentation[] $hits
+ * @var array $results
+ * @var string $type "field"
+ * @var string $field
+ * @var string $labelField
+ * @var string $totalHits
+ * @var string $totalNotEmpty
  * @var string $userStatus
- * @var int[] $years
- * @var int $yearFilter
- * @var int $monthFilter
  */
 
 $plugins = $this->getHelperPluginManager();
 $assetUrl = $plugins->get('assetUrl');
 $translate = $plugins->get('translate');
+$urlHelper = $plugins->get('url');
 
-$this->headLink()->prependStylesheet($assetUrl('css/stats.css', 'Stats'));
+$this->headLink()->prependStylesheet($assetUrl('css/statistics.css', 'Statistics'));
 
-$this->htmlElement('body')->appendAttribute('class', 'stats browse');
+$this->htmlElement('body')->appendAttribute('class', 'statistics browse');
 
-// TODO Add total results from pagination.
-
-// TODODOODODODODODOO
-
-$totalResults = 0;
+$totalResults = $this->pagination()->getPaginator()->getTotalCount();
+$currentUrl = $urlHelper(null, [], true);
 ?>
 
-<?= $this->pageTitle($translate('Stats'), 1, sprintf($translate('Stats (%s total)'), $totalResults)) ?>
+<?= $this->pageTitle(sprintf($translate('Statistics (%s total)'), $totalResults), 1, $translate('Statistics')) ?>
 
 <?= $this->partial('common/statistics-nav') ?>
 
 <p>
-    <strong><?= $translate('By %s (%s)', $label_field, $this->statistic()->human_user_status($user_status)); ?></strong>
-    <em><?php echo ' ' . $translate('[%d filled values / %d total hits]', $total_not_empty, $total_hits); ?></em>
+    <strong><?= sprintf($translate('By %s (%s)'), $labelField, $this->statistic()->humanUserStatus($userStatus)) ?></strong>
+    <em><?= sprintf($translate('[%d filled values / %d total hits]'), $totalNotEmpty, $totalHits) ?></em>
 </p>
 
-<?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
-
-<?php if ($total_results):
-    echo pagination_links();
-    ?>
-    <table class="statistics-table">
+<?php if ($totalResults): ?>
+<div class="browse-controls">
+    <?= $pagination = $this->pagination() ?>
+    <?= $this->partial('common/statistics-quick-filters') ?>
+    <?php //= $this->sortSelector($sortHeadings) ?>
+</div>
+<table class="tablesaw statistics-table" data-tablesaw-mode="stack">
     <thead>
         <tr>
-            <?php
-            $browseHeadings[$label_field] = $field;
-            $browseHeadings[$translate('Hits')] = 'hits';
-            $browseHeadings['%'] = 'hits';
-            echo browse_sort_links($browseHeadings, array('link_tag' => 'th scope="col"', 'list_tag' => ''));
-            ?>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=' . $field ?>"><?= $labelField ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=hits' ?>"><?= $translate('Hits') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=hits' ?>"><?= $translate('Percent') ?></a>
+            </th>
         </tr>
     </thead>
     <tbody>
-<?php $key = 0; ?>
-<?php foreach ($hits as $position => $hit): ?>
-        <tr class="statistics-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
-            <td class="statistics-field"><?php echo $hit[$field]; ?></td>
-            <td class="statistics-hits"><?php echo $hit['hits']; ?></td>
-            <td class="statistics-percent"><?php echo round($hit['hits'] * 100 / $total_not_empty, 1); ?>%</td>
+<?php foreach ($results as $position => $result): ?>
+        <tr class="statistics-stat">
+            <td class="statistics-field"><?= $result[$field] ?></td>
+            <td class="statistics-hits"><?= $result['hits'] ?></td>
+            <td class="statistics-percent"><?= round($result['hits'] * 100 / $totalNotEmpty, 1) ?>%</td>
         </tr>
 <?php endforeach; ?>
     </tbody>
-    </table>
-    <?php echo pagination_links(); ?>
+</table>
+    <?= $pagination ?>
 <?php else: ?>
     <br class="clear" />
-    <?php if (total_records('Hit') == 0): ?>
-        <h2><?= $translate('There is no hit yet.'); ?></h2>
+    <div class="no-resources">
+    <?php if (!$totalHits): ?>
+        <p><?= $translate('There is no hit yet.') ?></p>
     <?php else: ?>
-        <p><?= $translate('The query searched %s hits and returned no results.', total_records('Hit')); ?></p>
-        <p><a href="<?php echo url('admin/statistics/browse/by-' . $stats_type); ?>"><?= $translate('See all stats.'); ?></a></p>
+        <p><?= $translate('The query searched %s hits and returned no results.', $totalHits) ?></p>
+        <p><a href="<?= $urlHelper('admin/statistics/default', ['action' => 'by-' . $type], true) ?>"><?= $translate('See all statistics.') ?></a></p>
     <?php endif; ?>
+    </div>
 <?php endif; ?>
-    <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
