@@ -30,7 +30,7 @@ $totalResults = 0;
 <?= $this->partial('common/statistics-nav') ?>
 
 <p>
-    <strong><?= $translate('By %s (%s)', $label_field, $this->stats()->human_user_status($user_status)); ?></strong>
+    <strong><?= $translate('By %s (%s)', $label_field, $this->statistic()->human_user_status($user_status)); ?></strong>
     <em><?php echo ' ' . $translate('[%d filled values / %d total hits]', $total_not_empty, $total_hits); ?></em>
 </p>
 

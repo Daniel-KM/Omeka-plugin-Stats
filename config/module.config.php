@@ -44,15 +44,17 @@ return [
         'AdminModule' => [
             'statistics' => [
                 'label' => 'Statistics', // @translate
-                'route' => 'admin/statistics/default',
+                'route' => 'admin/statistics',
                 'controller' => 'summary',
+                'action' => 'index',
                 'resource' => 'Statistics\Controller\Summary',
-                'class' => 'settings o-icon-settings o-icon-chart-line fas fa-chart-line',
+                'class' => 'o-icon- fa-chart-line',
                 'pages' => [
                     [
                         'label' => 'Summary', // @translate
                         'route' => 'admin/statistics/default',
                         'controller' => 'summary',
+                        'action' => 'index',
                         'resource' => 'Statistics\Controller\Summary',
                         'pages' => [
                             [
@@ -77,6 +79,7 @@ return [
                                 '__NAMESPACE__' => 'Statistics\Controller',
                                 '__ADMIN__' => true,
                                 'controller' => 'Summary',
+                                'action' => 'index',
                             ],
                         ],
                         'may_terminate' => true,

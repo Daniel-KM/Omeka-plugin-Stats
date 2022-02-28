@@ -1,21 +1,26 @@
-.statistics-hover {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    width: 150px;
-}
-.statistics-hover:hover {
-    overflow: visible;
-    position: absolute;
-    white-space: normal;
-    width: 150px;
-}
-.odd .statistics-hover:hover {
-    background-color: #fff;
-}
-.even .statistics-hover:hover {
-    background-color: #f3f3e7;
-}
-.statistics-hover:hover+div {
-    margin-top: 20px;
+@media screen {
+    header nav .statistics::before,
+    .statistics .subhead::before,
+    .statistics .no-resources:before {
+      content: '';
+    }
+    .statistics-hover {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .statistics-hover:hover {
+        overflow: visible;
+        position: absolute;
+        white-space: normal;
+    }
+    .odd .statistics-hover:hover {
+        background-color: #fff;
+    }
+    .even .statistics-hover:hover {
+        background-color: #f3f3e7;
+    }
+    .statistics-hover:hover+div {
+        margin-top: 20px;
+    }
 }

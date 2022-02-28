@@ -88,7 +88,7 @@ echo common('statistics-nav');
         <?php foreach ($results['most_viewed_records'] as $position => $stat): ?>
             <li><?php
                 echo __('%s (%d views [%d / %d])',
-                    $this->stats()->link_to_record($stat->Record),
+                    $this->statistic()->link_to_record($stat->Record),
                     $stat->hits,
                     $stat->hits_anonymous,
                     $stat->hits_identified);
@@ -110,7 +110,7 @@ echo common('statistics-nav');
         <?php foreach ($results['most_viewed_collections'] as $position => $stat): ?>
             <li><?php
                 echo __('%s (%d views [%d / %d])',
-                    $this->stats()->link_to_record($stat->Record),
+                    $this->statistic()->link_to_record($stat->Record),
                     $stat->hits,
                     $stat->hits_anonymous,
                     $stat->hits_identified);

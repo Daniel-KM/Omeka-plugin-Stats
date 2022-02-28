@@ -47,6 +47,7 @@ class BrowseController extends AbstractActionController
             'resources' => $stats,
             'stats' => $stats,
             'userStatus' => $userStatus,
+            'type' => Stat::TYPE_PAGE,
         ]);
         return $view
             ->setTemplate('statistics/admin/browse/by-stat');
@@ -70,6 +71,7 @@ class BrowseController extends AbstractActionController
             'resources' => $stats,
             'stats' => $stats,
             'userStatus' => $userStatus,
+            'type' => Stat::TYPE_RESOURCE,
         ]);
         return $view
             ->setTemplate('statistics/admin/browse/by-stat');
@@ -93,6 +95,7 @@ class BrowseController extends AbstractActionController
             'resources' => $stats,
             'stats' => $stats,
             'userStatus' => $userStatus,
+            'type' => Stat::TYPE_DOWNLOAD,
         ]);
         return $view
             ->setTemplate('statistics/admin/browse/by-stat');
@@ -149,7 +152,7 @@ class BrowseController extends AbstractActionController
         }
 
         $view = new ViewModel([
-            'statsType' => 'field',
+            'type' => 'field',
             'field' => $field,
             'labelField' => $labelField,
             'totalHits' => $totalHits,

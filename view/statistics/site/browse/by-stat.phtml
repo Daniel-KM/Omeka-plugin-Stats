@@ -43,7 +43,7 @@ echo common('statistics-nav');
             <td class="statistics-record">
                 <?php if ($stat->hasRecord()): ?>
                 <div class="statistics-hover">
-                    <?php echo $this->stats()->link_to_record($stat->Record); ?>
+                    <?php echo $this->statistic()->link_to_record($stat->Record); ?>
                 </div>
                 <?php endif; ?>
             </td>

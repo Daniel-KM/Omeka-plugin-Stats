@@ -81,7 +81,7 @@ echo common('statistics-nav');
         <?php foreach ($results['most_viewed_records'] as $position => $stat): ?>
             <li><?php
                 echo __('%s (%d views)',
-                    $this->stats()->link_to_record($stat->Record),
+                    $this->statistic()->link_to_record($stat->Record),
                      $stat->$user_status);
             ?></li>
         <?php endforeach; ?>

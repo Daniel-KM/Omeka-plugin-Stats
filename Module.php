@@ -58,7 +58,7 @@ class Module extends AbstractModule
             )
             ->allow(
                 null,
-                [\Statistics\Controller\DownloadController::class]
+                ['Statistics\Controller\Download']
             )
         ;
         // Only admins are allowed to browse stats.
