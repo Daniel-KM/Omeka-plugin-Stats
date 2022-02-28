@@ -1,29 +1,44 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace Stats\View\Helper;
+
+use Laminas\View\Helper\AbstractHelper;
+use Stats\Api\Adapter\HitAdapter;
+use Stats\Api\Adapter\StatAdapter;
+use Stats\Entity\Stat;
+use Omeka\Api\Representation\AbstractResourceRepresentation;
+
 /**
  * Helper to get some public stats.
  *
- * @internal There is no difference between total of page or download, because
- * each url is unique, but there are differences between positions and viewed
- * pages and downloaded files lists.
+ * Note: There is no difference between total of page or download, because each
+ * url is unique, but there are differences between positions and viewed pages
+ * and downloaded files lists.
  */
-class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
+class Statistic extends AbstractHelper
 {
-    protected $_table;
+    /**
+     * @var \Stats\Api\Adapter\HitAdapter
+     */
+    protected $hitAdapter;
 
     /**
-     * Load the hit table one time only.
+     * @var \Stats\Api\Adapter\StatAdapter
      */
-    public function __construct()
+    protected $statAdapter;
+
+    public function __construct(HitAdapter $hitAdapter, StatAdapter $statAdapter)
     {
-        $this->_table = get_db()->getTable('Stat');
+        $this->hitAdapter = $hitAdapter;
+        $this->statAdapter = $statAdapter;
     }
 
     /**
      * Get the stats.
      *
-     * @return This view helper.
+     * @return self
      */
-    public function stats()
+    public function __invoke(): self
     {
         return $this;
     }
@@ -31,21 +46,44 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
     /**
      * Hit a new page (to use only with external plugins for not managed urls).
      *
-     * No filter is applied to get the eventual record.
+     * No filter is applied to get the eventual resource.
      *
      * @param string $url Url
-     * @param Record|array $record If array, contains record type and record id.
+     * @param \Omeka\Api\Representation\AbstractRepresentation|array $resource
+     * If array, contains the resource type (api name) and resource id.
      */
-    public function new_hit($url, $record = null)
+    public function newHit(string $url, $resource = null): void
     {
-        $record = $this->checkAndPrepareRecord($record);
-        $hit = new Hit;
-        $hit->setCurrentRequest();
-        $hit->url = $this->checkAndCleanUrl($url);
-        $hit->record_type = $record['record_type'];
-        $hit->record_id = $record['record_id'];
-        $hit->setCurrentUser();
-        $hit->save();
+        if (empty($url)) {
+            return;
+        }
+
+        $pos = strpos($url, '?');
+        if ($pos && $pos !== strlen($url)) {
+            $query = substr($url, $pos + 1);
+            $cleanedUrl = $this->checkAndCleanUrl(substr($url, 0, $pos));
+        } else {
+            $query = '';
+            $cleanedUrl = $this->checkAndCleanUrl($url);
+        }
+
+        $resource = $this->checkAndPrepareResource($resource);
+        $user = $this->view->identity();
+
+        $request = new \Omeka\Api\Request(\Omeka\Api\Request::CREATE, 'hits');
+        $request
+            ->setContent([
+                'url' => $cleanedUrl,
+                'entity_name' => $resource['type'],
+                'entity_id' => $resource['id'],
+                'user_id' => $user ? $user->getId() : 0,
+                'query' => $query,
+            ])
+            ->setOption('initialize', false)
+            ->setOption('finalize', false)
+            ->setOption('returnScalar', 'id')
+        ;
+        $this->hitAdapter->create($request);
     }
 
     /**
@@ -53,57 +91,55 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      *
      * @param string $url Url Current url if null.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
+     * @return int
      */
-    public function total_page($url = null, $userStatus = null)
+    public function totalPage(?string $url = null, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
+        $userStatus = $this->normalizeUserStatus($userStatus);
         if (is_null($url)) {
-            $url = current_url();
+            $url = $this->currentUrl();
         }
-        return $this->_table->getTotalPage($url, $userStatus);
+        return $this->statAdapter->totalPage($url, $userStatus);
     }
 
     /**
-     * Get the count of hits of the record.
+     * Get the count of hits of the resource.
      *
-     * @param Record|array $record If array, contains record type and record id.
+     * @param Resource|array $resource If array, contains resource type and resource id.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
      */
-    public function total_record($record, $userStatus = null)
+    public function totalResource($resource, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_table->getTotalRecord($record, $userStatus);
+        $entity = $this->checkAndPrepareResource($resource);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        return $this->statAdapter->totalResource($entity['type'], $entity['id'], $userStatus);
     }
 
     /**
-     * Get the count of hits of the record type.
+     * Get the count of hits of the resource type.
      *
-     * @param Record|array $record If array, contains record type and record id.
+     * @param Resource|array $resource If array, contains resource type and resource id.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
      */
-    public function total_record_type($recordType, $userStatus = null)
+    public function totalResourceType($resourceType, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_table->getTotalRecordType($recordType, $userStatus);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        return $this->statAdapter->totalResourceType($resourceType, $userStatus);
     }
 
     /**
-     * Get the count of hits of a record or sub-record.
+     * Get the count of hits of a resource or sub-resource.
      *
-     * @param Record|string|integer $value If string or numeric, url or id of the
+     * @param Resource|string|integer $value If string or numeric, url or id of the
      * downloaded  file. If Item, returns total of dowloaded files of this Item.
      * If Collection, returns total of downloaded files of all items. If File,
      * returns total of downloads of this file.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
      */
-    public function total_download($value, $userStatus = null)
+    public function totalDownload($value, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_table->getTotalDownload($value, $userStatus);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        return $this->statAdapter->totalDownload($value, $userStatus);
     }
 
     /**
@@ -111,30 +147,29 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      *
      * @param string $url Url Current url if null.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
      */
-    public function position_page($url = null, $userStatus = null)
+    public function positionPage(?string $url = null, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
+        $userStatus = $this->normalizeUserStatus($userStatus);
         if (is_null($url)) {
-            $url = current_url();
+            $url = $this->currentUrl();
         }
-        // Call getPosition() and not getPositionPage() to simplify process of
+        // Call positionHits() and not positionPage() to simplify process of
         // page or download. The check is made later.
-        return $this->_table->getPosition(array('url' => $url), $userStatus);
+        return $this->statAdapter->positionHits(['url' => $url], $userStatus);
     }
 
     /**
-     * Get the position of hits of the record (by record type).
+     * Get the position of hits of the resource (by resource type).
      *
-     * @param Record|array $record If array, contains record type and record id.
+     * @param Resource|array $resource If array, contains resource type and resource id.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
      */
-    public function position_record($record, $userStatus = null)
+    public function positionResource($resource, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_table->getPositionRecord($record, $userStatus);
+        $entity = $this->checkAndPrepareResource($resource);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        return $this->statAdapter->positionResource($entity['type'], $entity['id'], $userStatus);
     }
 
     /**
@@ -142,24 +177,23 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      *
      * @todo Position of user is currently unavailable.
      *
-     * @param Record|string|integer $value If string or numeric, url or id of the
+     * @param Resource|string|integer $value If string or numeric, url or id of the
      * downloaded  file. If Item, returns position of dowloaded files of this
      * Item. If Collection, returns position of downloaded files of all items.
      * If File, returns position of downloads of this file.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     * @return integer
      */
-    public function position_download($value, $userStatus = null)
+    public function positionDownload($value, ?string $userStatus = null): int
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        return $this->_table->getPositionDownload($value, $userStatus);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        return $this->statAdapter->positionDownload($value, $userStatus);
     }
 
     /**
      * Get viewed pages.
      *
-     *@param null|boolean $hasRecord Null for all pages, boolean to set with or
-     * without record.
+     *@param null|boolean $hasResource Null for all pages, boolean to set with or
+     * without resource.
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @param integer $limit Number of objects to return per "page".
@@ -167,22 +201,22 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      * @param boolean $asHtml Return html (true, default) or array of Stats.
      * @return string|array Return html of array of Stats.
      */
-    public function viewed_pages($hasRecord = null, $sort = 'most', $userStatus = null, $limit = null, $page = null, $asHtml = true)
+    public function viewedPages(?bool $hasResource = null, ?string $sort = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null, bool $asHtml = true)
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        $stats = ($sort == 'last')
-            ? $this->_table->getLastViewedPages($hasRecord, $userStatus, $limit, $page)
-            : $this->_table->getMostViewedPages($hasRecord, $userStatus, $limit, $page);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        $stats = $sort === 'last'
+            ? $this->statAdapter->lastViewedPages($hasResource, $userStatus, $limit, $page)
+            : $this->statAdapter->mostViewedPages($hasResource, $userStatus, $limit, $page);
 
         return $asHtml
-            ? $this->_viewedHtml($stats, 'page', $sort, $userStatus)
+            ? $this->viewedHtml($stats, Stat::TYPE_PAGE, $sort, $userStatus)
             : $stats;
     }
 
     /**
-     * Get viewed records.
+     * Get viewed resources.
      *
-     * @param Record|array $recordType If array, contains record type.
+     * @param Resource|array $resourceType If array, contains resource type.
      * Can be empty, "all", "none", "page" or "download" too.
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
@@ -191,29 +225,26 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      * @param boolean $asHtml Return html (true, default) or array of Stats.
      * @return string|array Return html of array of Stats.
      */
-    public function viewed_records($recordType, $sort = 'most', $userStatus = null, $limit = null, $page = null, $asHtml = true)
+    public function viewedResources($resourceType, ?string $sort = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null, bool $asHtml = true)
     {
         // Manage exceptions.
-        if (empty($recordType) || $recordType == 'all' || (is_array($recordType) && in_array('all', $recordType))) {
-            $recordType = null;
-        }
-        elseif ($recordType == 'none' || (is_array($recordType) && in_array('none', $recordType))) {
-            return $this->viewed_pages(false, $sort, $userStatus, $limit, $page, $asHtml);
-        }
-        elseif ($recordType == 'page' || (is_array($recordType) && in_array('page', $recordType))) {
-            return $this->viewed_pages(null, $sort, $userStatus, $limit, $page, $asHtml);
-        }
-        elseif ($recordType == 'download' || (is_array($recordType) && in_array('download', $recordType))) {
-            return $this->viewed_downloads($sort, $userStatus, $limit, $page, $asHtml);
+        if (empty($resourceType) || $resourceType === 'all' || (is_array($resourceType) && in_array('all', $resourceType))) {
+            $resourceType = null;
+        } elseif ($resourceType === 'none' || (is_array($resourceType) && in_array('none', $resourceType))) {
+            return $this->viewedPages(false, $sort, $userStatus, $limit, $page, $asHtml);
+        } elseif ($resourceType === Stat::TYPE_PAGE || (is_array($resourceType) && in_array(Stat::TYPE_PAGE, $resourceType))) {
+            return $this->viewedPages(null, $sort, $userStatus, $limit, $page, $asHtml);
+        } elseif ($resourceType === Stat::TYPE_DOWNLOAD || (is_array($resourceType) && in_array(Stat::TYPE_DOWNLOAD, $resourceType))) {
+            return $this->viewedDownloads($sort, $userStatus, $limit, $page, $asHtml);
         }
 
-        $userStatus = $this->_getUserStatus($userStatus);
-        $stats = ($sort == 'last')
-            ? $this->_table->getLastViewedRecords($recordType, $userStatus, $limit, $page)
-            : $this->_table->getMostViewedRecords($recordType, $userStatus, $limit, $page);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        $stats = $sort === 'last'
+            ? $this->statAdapter->lastViewedResources($resourceType, $userStatus, $limit, $page)
+            : $this->statAdapter->mostViewedResources($resourceType, $userStatus, $limit, $page);
 
         return $asHtml
-            ? $this->_viewedHtml($stats, 'record', $sort, $userStatus)
+            ? $this->viewedHtml($stats, Stat::TYPE_RESOURCE, $sort, $userStatus)
             : $stats;
     }
 
@@ -227,15 +258,15 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      * @param boolean $asHtml Return html (true, default) or array of Stats.
      * @return string|array Return html of array of Stats.
      */
-    public function viewed_downloads($sort = 'most', $userStatus = null, $limit = null, $page = null, $asHtml = true)
+    public function viewedDownloads(?string $sort = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null, bool $asHtml = true)
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        $stats = ($sort == 'last')
-            ? $this->_table->getLastViewedDownloads($userStatus, $limit, $page)
-            : $this->_table->getMostViewedDownloads($userStatus, $limit, $page);
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        $stats = $sort === 'last'
+            ? $this->statAdapter->lastViewedDownloads($userStatus, $limit, $page)
+            : $this->statAdapter->mostViewedDownloads($userStatus, $limit, $page);
 
         return $asHtml
-            ? $this->_viewedHtml($stats, 'download', $sort, $userStatus)
+            ? $this->viewedHtml($stats, Stat::TYPE_DOWNLOAD, $sort, $userStatus)
             : $stats;
     }
 
@@ -243,31 +274,124 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      * Helper to get string from list of stats.
      *
      * @param array $stats Array of stats.
-     * @param string $type "page", "record" or "download".
+     * @param string $type "page", "resource" or "download".
      * @param string $sort Sort by "most" (default) or "last" vieweds.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
      * @return string html
      */
-    private function _viewedHtml($stats, $type, $sort, $userStatus)
+    protected function viewedHtml($stats, $type, $sort, $userStatus): string
     {
-        $html = '';
+
         if (empty($stats)) {
-            $html .= '<div class="stats">' . __('None.') . '</div>';
-        }
-        else {
-            foreach ($stats as $key => $stat) {
-                $params = array(
-                    'type' => $type,
-                    'stat' => $stat,
-                    'sort' => $sort,
-                    'user_status' => $userStatus,
-                    'position' => $key + 1,
-                );
-                $html .= common('stats-single', $params);
-            }
+            return '<div class="stats">' . $this->view->translate('None.') . '</div>';
         }
 
+        // TODO Use partial loop.
+        $partial = $this->view->plugin('partial');
+        $html = '';
+        foreach ($stats as $key => $stat) {
+            $params = [
+                'type' => $type,
+                'stat' => $stat,
+                'sort' => $sort,
+                'userStatus' => $userStatus,
+                'position' => $key + 1,
+            ];
+            $html .= $partial('common/stats-single', $params);
+        }
         return $html;
+    }
+
+    /**
+     * Get the most viewed pages.
+     *
+     * Zero viewed pages are never returned.
+     *
+     *@param bool|null $hasResource Null for all pages, true or false to set
+     * with or without resource.
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return \Statistics\Api\Representation\StatRepresentation[]
+     */
+    public function mostViewedPages(?bool $hasResource = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        return $this->statAdapter->mostViewedPages($hasResource, $userStatus, $limit, $page);
+    }
+
+    /**
+     * Get the most viewed specified resources.
+     *
+     * Zero viewed resources are never returned.
+     *
+     * @param string|array $entityName If array, may contain multiple
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return \Statistics\Api\Representation\StatRepresentation[]
+     */
+    public function mostViewedResources($entityName = null, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        return $this->statAdapter->mostViewedResources($entityName, $userStatus, $limit, $page);
+    }
+
+    /**
+     * Get the most downloaded files.
+     *
+     * Zero viewed downloads are never returned.
+     *
+     * @param string $userStatus Can be hits (default), anonymous or identified.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return \Statistics\Api\Representation\StatRepresentation[]
+     */
+    public function mostViewedDownloads(?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        return $this->statAdapter->mostViewedDownloads($userStatus, $limit, $page);
+    }
+
+    /**
+     * Retrieve a count of distinct rows for a field. Empty is not count.
+     *
+     * @param array $query optional Set of search filters upon which to base
+     * the count.
+     */
+    public function countFrequents(array $query = []): int
+    {
+        return $this->hitAdapter->countFrequents($query);
+    }
+
+    /**
+     * Get the most frequent data in a field. Empty values are never returned.
+     *
+     * The main difference with search() is that values are not resources, but
+     * array of synthetic values.
+     *
+     * @param array $params A set of parameters by which to filter the objects
+     *   that get returned from the database. It should contains a 'field' for
+     *   the name of the column to evaluate.
+     * @param int $limit Number of objects to return per "page".
+     * @param int $page Page to retrieve.
+     * @return array Data and total hits.
+     */
+    public function frequents(array $query = [], ?int $limit = null, ?int $page = null): array
+    {
+        return $this->hitAdapter->frequents($query, $limit, $page);
+    }
+
+    /**
+     * Get the most frequent data in a field.
+     *
+     * @param string $field Name of the column to evaluate.
+     * @param string $userStatus Can be hits (default), hits_anonymous or
+     * hits_identified.
+     * @param integer $limit Number of objects to return per "page".
+     * @param integer $page Page to retrieve.
+     * @return array Data and total of the according total hits.
+     */
+    public function mostFrequents(string $field, ?string $userStatus = null, ?int $limit = null, ?int $page = null): array
+    {
+        return $this->hitAdapter->mostFrequents($field, $userStatus, $limit, $page);
     }
 
     /**
@@ -275,45 +399,43 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      *
      * @param string $url Url (current url if empty).
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     *
      * @return string Html code from the theme.
      */
-    public function text_page($url = null, $userStatus = null)
+    public function textPage(?string $url = null, ?string $userStatus = null): string
     {
        if (empty($url)) {
-            $url = current_url();
+            $url = $this->currentUrl();
         }
-        $userStatus = $this->_getUserStatus($userStatus);
-        $stat = $this->_table->findByUrl($url);
-        return common('stats-value', array(
-            'type' => 'page',
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        $stat = $this->view->api()->searchOne('stats', ['url' => $url, 'type' => Stat::TYPE_PAGE])->getContent();
+        return $this->view->partial('common/stats-value', [
+            'type' => Stat::TYPE_PAGE,
             'stat' => $stat,
-            'user_status' => $userStatus,
-        ));
+            'userStatus' => $userStatus,
+        ]);
     }
 
     /**
-     * Get the stat view for the selected record.
+     * Get the stat view for the selected resource.
      *
-     * @param Record|array $record If array, contains record type and record id.
+     * @param Resource|array $resource If array, contains resource type and resource id.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     *
      * @return string Html code from the theme.
      */
-    public function text_record($record, $userStatus = null)
+    public function textResource($resource, ?string $userStatus = null): string
     {
-        // Check and get record.
-        $record = $this->checkAndPrepareRecord($record);
-        if (empty($record)) {
+        // Check and get resource.
+        $resource = $this->checkAndPrepareResource($resource);
+        if (empty($resource['type'])) {
             return '';
         }
-        $userStatus = $this->_getUserStatus($userStatus);
-        $stat = $this->_table->findByRecord($record);
-        return common('stats-value', array(
-            'type' => 'record',
+        $stat = $this->view->api()->searchOne('stats', ['entity_name' => $resource['type'], 'entity_id' => $resource['id'], 'type' => Stat::TYPE_RESOURCE])->getContent();
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        return $this->view->partial('common/stats-value', [
+            'type' => Stat::TYPE_RESOURCE,
             'stat' => $stat,
-            'user_status' => $userStatus,
-        ));
+            'userStatus' => $userStatus,
+        ]);
     }
 
     /**
@@ -321,71 +443,76 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      *
      * @param string|integer $downloadId Url or id of the downloaded file.
      * @param string $userStatus "anonymous" or "identified", else not filtered.
-     *
      * @return string Html code from the theme.
      */
-    public function text_download($downloadId, $userStatus = null)
+    public function textDownload($downloadId, ?string $userStatus = null): string
     {
-        $userStatus = $this->_getUserStatus($userStatus);
-        $stat = $this->_table->findByDownload($downloadId);
-        return common('stats-value', array(
-            'type' => 'download',
+        $userStatus = $this->normalizeUserStatus($userStatus);
+        $stat = $this->view->api()->searchOne('stats',
+            is_numeric($downloadId)
+                ? ['entity_name' => 'media', 'entity_id' => $downloadId, 'type' => Stat::TYPE_DOWNLOAD]
+                : ['url' => $downloadId, 'type' => Stat::TYPE_DOWNLOAD]
+            )->getContent();
+        return $this->view->partial('common/stats-value', [
+            'type' => Stat::TYPE_DOWNLOAD,
             'stat' => $stat,
-            'user_status' => $userStatus,
-        ));
+            'userStatus' => $userStatus,
+        ]);
     }
 
     /**
      * Helper to select the good link maker according to type.
      *
-     * @see link_to()
+     *@deprecated Useless in Omeka S.
      *
-     * @param Record $record
-     *
+     * @param Resource $resource
      * @return string Html code from the theme.
      */
-    public function link_to_record($record)
+    public function linkToResource(?AbstractResourceRepresentation $resource): string
     {
-        if (empty($record)) {
-            return __('Deleted');
+        if (empty($resource)) {
+            return $this->view->translate('Unavailable'); // @translate
         }
-        switch (get_class($record)) {
-            case 'Item':
-                return link_to_item(null, array(), 'show', $record);
-            case 'File':
-                return link_to_file_show(array(), null, $record);
-            case 'Collection':
-                return link_to_collection(null, array(), 'show', $record);
-            case 'SimplePagesPage':
-                return sprintf('<a href="%s">%s</a>', html_escape(record_url($record)), metadata($record, 'title'));
-                break;
-            case 'Exhibit':
-                return exhibit_builder_link_to_exhibit($record);
-            case 'ExhibitPage':
-                return exhibit_builder_link_to_exhibit($record->getExhibit(), null, array(), $record);
-            default:
-                return link_to($record);
+        if (method_exists($resource, 'displayTitle')) {
+            $title = $resource->displayTitle();
+        } elseif (method_exists($resource, 'title')) {
+            $title = $resource->title();
+        } elseif (method_exists($resource, 'label')) {
+            $title = $resource->label();
+        } else {
+            $title = '[untitled]'; // @translate
         }
+        return $resource->linkRaw($title);
     }
 
     /**
-     * Helper to get the human name of the record type.
+     * Helper to get the human name of the resource type.
      *
-     * @param string $recordType
+     * @param string $resourceType
      * @param string $defaultEmpty Return this string if empty
-     *
-     * @return string
      */
-    public function human_record_type($recordType, $defaultEmpty = '')
+    public function humanResourceType($resourceType, ?string $defaultEmpty = null): string
     {
-        if (empty($recordType)) {
-            return $defaultEmpty;
+        if (empty($resourceType)) {
+            return (string) $defaultEmpty;
         }
-        switch ($recordType) {
-            case 'SimplePagesPage': return __('Simple Page');
-            case 'ExhibitPage': return __('Exhibit Page');
+        $cleanResourceType = $this->normalizeResourceType($resourceType);
+        $translate = $this->view->plugin('translate');
+        switch ($cleanResourceType) {
+            // Api names
+            case 'items':
+                return $translate('Item');
+            case 'item_sets':
+                return $translate('Item set');
+            case 'media':
+                return $translate('Media');
+            case 'resources':
+                return $translate('Resource');
+            case 'site_pages':
+                return $translate('Page');
+            default:
+                return $translate($resourceType);
         }
-        return __($recordType);
     }
 
     /**
@@ -395,168 +522,195 @@ class Stats_View_Helper_Stats extends Zend_View_Helper_Abstract
      *
      * @return string
      */
-    public function human_user_status($userStatus)
+    public function humanUserStatus(?string $userStatus): string
     {
+        $translate = $this->view->plugin('translate');
+        $userStatus = $this->normalizeUserStatus();
         switch($userStatus) {
-            case 'total':
-            case 'hits':
-                return __('all users');
             case 'anonymous':
-            case 'hits_anonymous':
-                return __('anonymous users');
+                return $translate('anonymous users');
             case 'identified':
-            case 'hits_identified':
-                return __('identified users');
+                return $translate('identified users');
+            case 'hits':
             default:
-                return $userStatus;
+                return $translate('all users');
         }
     }
 
     /**
-     * Clean the url(s) to get better results (remove the domain and the query).
-     *
-     * @return array|string $url
+     * Clean the url to get better results (remove the domain and base path).
      */
-    public function checkAndCleanUrl($url)
+    protected function checkAndCleanUrl(string $url): string
     {
-        defined('WEB_RELATIVE') || define('WEB_RELATIVE', parse_url(WEB_ROOT, PHP_URL_PATH));
+        $plugins = $this->view->getHelperPluginManager();
+        $serverUrl = $plugins->get('serverUrl')->__invoke();
+        $basePath = $plugins->get('basePath')->__invoke();
 
-        if (!is_array($url)) {
-            $url = array($url);
-        }
+        $url = trim($url);
 
-        foreach ($url as &$value) {
-            // Keep only path to remove domain and query.
-            $value = parse_url((string) $value, PHP_URL_PATH);
-            // Remove relative path if any.
-            if (strpos($value, WEB_RELATIVE) === 0) {
-                $value = substr($value, strlen(WEB_RELATIVE));
-            }
-        }
+        // Strip out the protocol, host, base URL, and rightmost slash before
+        // comparing the URL to the current one
+        $stripOut = [$serverUrl . $basePath, @$_SERVER['HTTP_HOST'], $basePath];
+        $cleanedUrl = rtrim(str_replace($stripOut, '', $url), '/');
 
-        $url = array_filter($url);
-        if (empty($url)) {
+        if (substr($cleanedUrl, 0, 4) === 'http' || substr($cleanedUrl, 0, 1) !== '/') {
             return '';
         }
-        if (count($url) == 1) {
-            return reset($url);
-        }
-        return $url;
+        return $cleanedUrl;
     }
 
     /**
      * Check if url is a page one or a download one.
-     *
-     * @return boolean
      */
-     public function isDownload($url)
+     public function isDownload(string $url): bool
      {
-        return (strpos($url, '/files/original/') === 0) || (strpos($url, '/files/fullsize/') === 0);
+        return (strpos($url, '/files/original/') === 0)
+            || (strpos($url, '/files/large/') === 0)
+            // For migration from Omeka Classic.
+            || (strpos($url, '/files/fullsize/') === 0);
      }
 
     /**
-     * Helper to get params from a record. If no record, return empty record.
+     * Helper to get params from a resource. If no resource, return empty resource.
      *
-     * This allows record to be an object or an array. This is useful to avoid
-     * to fetch a record when it's not needed, in particular when it's called
+     * This allows resource to be an object or an array. This is useful to avoid
+     * to fetch a resource when it's not needed, in particular when it's called
      * from the theme.
      *
-     * Recommended forms are object and associative array with 'record_type'
-     * and 'record_id' as keys.
+     * Recommended forms are object and associative array with 'type' (api name)
+     * and 'id' as keys.
      *
-     * @return array Associatie array with record type and record id.
+     * @return array Associative array with resource type and id.
      */
-    public function checkAndPrepareRecord($record)
+    public function checkAndPrepareResource($resource): array
     {
-        if (is_object($record)) {
-            $recordType = get_class($record);
-            $recordId = $record->id;
-        }
-        elseif (is_array($record)) {
-            if (isset($record['record_type']) && isset($record['record_id'])) {
-                $recordType = $record['record_type'];
-                $recordId = $record['record_id'];
-            }
-            elseif (count($record) == 1) {
-                $recordId = reset($record);
-                $recordType = key($record);
-            }
-            elseif (count($record) == 2) {
-                $recordType = array_shift($record);
-                $recordId = array_shift($record);
-            }
-            else {
-                return array(
-                    'record_type' => '',
-                    'record_id' => 0,
-                );
-            }
-        }
-        else {
-            return array(
-                'record_type' => '',
-                'record_id' => 0,
-            );
-        }
-        return array(
-            'record_type' => $recordType,
-            'record_id' => $recordId,
-        );
-    }
-
-    /**
-     * Helper to record type.
-     *
-     * Recommended forms are string or array of strings.
-     *
-     * @param Record|array|string $recordType Can be one or multiple.
-     * @return string|array
-     */
-    public function checkRecordType($recordType)
-    {
-        if (is_object($recordType)) {
-            return get_class($recordType);
-        }
-        if (is_array($recordType)) {
-            if (isset($recordType['record_type'])) {
-                return $recordType['record_type'];
-            }
-            else {
-                foreach ($recordType as &$rt) {
-                    if (!is_array($rt)) {
-                        $rt = $this->checkRecordType($rt);
-                    }
+        if (is_object($resource)) {
+            /** @var \Omeka\Api\Representation\AbstractRepresentation $resource */
+            $type = $resource->getControllerName();
+            $id = $resource->id();
+        } elseif (is_array($resource)) {
+            if (count($resource) === 1) {
+                $id = reset($resource);
+                $type = key($resource);
+            } elseif (count($resource) === 2) {
+                if (is_numeric(key($resource))) {
+                    $type = array_shift($resource);
+                    $id = array_shift($resource);
+                } else {
+                    $type = $resource['type'] ?? $resource['resource_type'] ?? $resource['name'] ?? $resource['entity_name'];
+                    $id = $resource['id'] ?? $resource['resource_id'] ?? $resource['entity_id'];
                 }
-                return $recordType;
+            } else {
+                return ['type' => '', 'id' => 0];
             }
+        } else {
+            return ['type' => '', 'id' => 0];
         }
-
-        return (string) $recordType;
+        $type = $this->normalizeResourceType($type);
+        return empty($type) || empty($id)
+            ? ['type' => '', 'id' => 0]
+            : ['type' => $type, 'id' => $id];
     }
 
     /**
      * Get default user status. This functions is used to allow synonyms.
-     *
-     * @param string $userStatus
-     *
-     * @return string
      */
-    private function _getUserStatus($userStatus = null)
+    protected function normalizeUserStatus(?string $userStatus = null): string
     {
-        switch($userStatus) {
-            case 'total':
-            case 'hits':
-                return 'hits';
-            case 'anonymous':
-            case 'hits_anonymous':
-                return 'hits_anonymous';
-            case 'identified':
-            case 'hits_identified':
-                return 'hits_identified';
-            default:
-                return is_admin_theme()
-                    ? get_option('stats_default_user_status_admin')
-                    : get_option('stats_default_user_status_public');
+        $userStatuses = [
+            'total' => 'hits',
+            'hits' => 'hits',
+            'anonymous' => 'anonymous',
+            'hits_anonymous' => 'anonymous',
+            'identified' => 'identified',
+            'hits_identified' => 'identified',
+        ];
+        if (isset($userStatuses[$userStatus])) {
+            return $userStatuses[$userStatus];
         }
+        return $this->view->status()->isAdminRequest()
+            ? (string) $this->view->setting('stats_default_user_status_admin', 'hits')
+            : (string) $this->view->setting('stats_default_user_status_public', 'anonymous');
+    }
+
+    protected function normalizeResourceType(?string $type): ?string
+    {
+        $apiNames = [
+            // Api names
+            'items' => 'items',
+            'item_sets' => 'item_sets',
+            'media' => 'media',
+            'resources' => 'resources',
+            'site_pages' => 'site_pages',
+            // Json-ld names
+            'o:Item' => 'items',
+            'o:ItemSet' => 'item_sets',
+            'o:Media' => 'media',
+            'o:SitePage' => 'site_pages',
+            // Classes.
+            \Omeka\Entity\Item::class => 'items',
+            \Omeka\Entity\ItemSet::class => 'item_sets',
+            \Omeka\Entity\Media::class => 'media',
+            \Omeka\Entity\Resource::class => 'resource',
+            \Omeka\Entity\SitePage::class => 'site_pages',
+            \Omeka\Api\Representation\ItemRepresentation::class => 'items',
+            \Omeka\Api\Representation\ItemSetRepresentation::class => 'item_sets',
+            \Omeka\Api\Representation\MediaRepresentation::class => 'media',
+            \Omeka\Api\Representation\ResourceReference::class => 'resource',
+            \Omeka\Api\Representation\SitePageRepresentation::class => 'site_pages',
+            // Other names.
+            'resource' => 'resources',
+            'resource:item' => 'items',
+            'resource:itemset' => 'item_sets',
+            'resource:media' => 'media',
+            // Other resource types or badly written types.
+            'o:item' => 'items',
+            'o:item_set' => 'item_sets',
+            'o:media' => 'media',
+            'item' => 'items',
+            'item_set' => 'item_sets',
+            'item-set' => 'item_sets',
+            'itemset' => 'item_sets',
+            'resource:item_set' => 'item_sets',
+            'resource:item-set' => 'item_sets',
+            'page' => 'site_pages',
+            'pages' => 'site_pages',
+            'site_page' => 'site_pages',
+        ];
+        return empty($type) ? null : $apiNames[$type] ?? $apiNames[strtolower($type)] ?? null;
+    }
+
+    /**
+     * Get the current site from the view or the root view (main layout).
+     */
+    protected function currentSite(): ?\Omeka\Api\Representation\SiteRepresentation
+    {
+        return $this->view->site ?? $this->view->site = $this->view
+            ->getHelperPluginManager()
+            ->get('Laminas\View\Helper\ViewModel')
+            ->getRoot()
+            ->getVariable('site');
+    }
+
+    /**
+     * Get the current url.
+     */
+    public function currentUrl(): string
+    {
+        static $currentUrl;
+
+        if (is_null($currentUrl)) {
+            $currentUrl = $this->view->url(null, [], true);
+            $basePath = $this->view->basePath();
+            if ($basePath && $basePath !== '/') {
+                $start = substr($currentUrl, 0, strlen($basePath));
+                // Manage specific paths for files.
+                if ($start === $basePath) {
+                    $currentUrl = substr($currentUrl, strlen($basePath));
+                }
+            }
+        }
+
+        return $currentUrl;
     }
 }

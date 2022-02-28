@@ -142,7 +142,7 @@ class Module extends AbstractModule
         // For performance, use the adapter directly, not the api.
         // TODO Use direct sql query to store hits?
         /** @var \Stats\Api\Adapter\HitAdapter $adapter */
-        $adapter = $services->get('Omeka\AdapterManager')->get('hits');
+        $adapter = $services->get('Omeka\ApiAdapterManager')->get('hits');
 
         $includeBots = (bool) $services->get('Omeka\Settings')->get('stats_include_bots');
         if (empty($includeBots)) {
