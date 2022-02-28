@@ -693,8 +693,8 @@ msgid "Position: %s (%s downloads)"
 msgstr "Position : %s (%s téléchargements)"
 
 #: views/shared/common/stats-value.php:14
-msgid "Not viewed"
-msgstr "Non vue"
+msgid "Never viewed"
+msgstr "Jamais vue"
 
 #: views/shared/common/stats-value.php:16
 #, php-format
