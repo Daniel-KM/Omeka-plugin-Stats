@@ -302,6 +302,19 @@ class HitAdapter extends AbstractEntityAdapter
         }
     }
 
+    public function sortBy(QueryBuilder $qb, array $query): void
+    {
+        if (isset($query['sort_field']) && is_array($query['sort_field'])) {
+            foreach ($query['sort_field'] as $by => $order) {
+                parent::sortQuery($qb, [
+                    'sort_by' => $by,
+                    'sort_order' => $order,
+                ]);
+            }
+        }
+        parent::sortQuery($qb, $query);
+    }
+
     /**
      * No need to validate: missing data are taken from current request.
      * @see \Omeka\Api\Adapter\AbstractEntityAdapter::validateRequest()
