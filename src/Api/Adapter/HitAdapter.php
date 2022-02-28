@@ -263,6 +263,43 @@ class HitAdapter extends AbstractEntityAdapter
                 $this->createNamedParameter($qb, '')
             ));
         }
+
+        if (isset($query['since']) && strlen((string) $query['since'])) {
+            // Adapted from Omeka classic.
+            // Accept an ISO 8601 date, set the tiemzone to the server's default
+            // timezone, and format the date to be MySQL timestamp compatible.
+            $date = new \DateTime((string) $query['since'], new \DateTimeZone(date_default_timezone_get()));
+            // Don't return result when date is badly formatted.
+            if (!$date) {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.created',
+                    $this->createNamedParameter($qb, 'since_error')
+                ));
+            } else {
+                // Select all dates that are greater than the passed date.
+                $qb->andWhere($expr->gte(
+                    'omeka_root.created',
+                    $this->createNamedParameter($qb, $date->format('Y-m-d H:i:s'))
+                ));
+            }
+        }
+
+        if (isset($query['until']) && strlen((string) $query['until'])) {
+            $date = new \DateTime((string) $query['until'], new \DateTimeZone(date_default_timezone_get()));
+            // Don't return result when date is badly formatted.
+            if (!$date) {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.created',
+                    $this->createNamedParameter($qb, 'until_error')
+                ));
+            } else {
+                // Select all dates that are lower than the passed date.
+                $qb->andWhere($expr->lte(
+                    'omeka_root.created',
+                    $this->createNamedParameter($qb, $date->format('Y-m-d H:i:s'))
+                ));
+            }
+        }
     }
 
     /**

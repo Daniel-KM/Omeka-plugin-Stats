@@ -141,6 +141,45 @@ class StatAdapter extends AbstractEntityAdapter
             $column = $classifiedColumns[$column] ?? 'totalHits';
             $qb->andWhere("omeka_root.$column != 0");
         }
+
+        // TODO For Stat, since/until use the modified date. Add a way to use the created date.
+
+        if (isset($query['since']) && strlen((string) $query['since'])) {
+            // Adapted from Omeka classic.
+            // Accept an ISO 8601 date, set the tiemzone to the server's default
+            // timezone, and format the date to be MySQL timestamp compatible.
+            $date = new \DateTime((string) $query['since'], new \DateTimeZone(date_default_timezone_get()));
+            // Don't return result when date is badly formatted.
+            if (!$date) {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.modified',
+                    $this->createNamedParameter($qb, 'since_error')
+                ));
+            } else {
+                // Select all dates that are greater than the passed date.
+                $qb->andWhere($expr->gte(
+                    'omeka_root.modified',
+                    $this->createNamedParameter($qb, $date->format('Y-m-d H:i:s'))
+                ));
+            }
+        }
+
+        if (isset($query['until']) && strlen((string) $query['until'])) {
+            $date = new \DateTime((string) $query['until'], new \DateTimeZone(date_default_timezone_get()));
+            // Don't return result when date is badly formatted.
+            if (!$date) {
+                $qb->andWhere($expr->eq(
+                    'omeka_root.modified',
+                    $this->createNamedParameter($qb, 'until_error')
+                ));
+            } else {
+                // Select all dates that are lower than the passed date.
+                $qb->andWhere($expr->lte(
+                    'omeka_root.modified',
+                    $this->createNamedParameter($qb, $date->format('Y-m-d H:i:s'))
+                ));
+            }
+        }
     }
 
     public function sortBy(QueryBuilder $qb, array $query): void
