@@ -1,84 +1,86 @@
 <?php
-$pageTitle = __('Stats');
-queue_css_file('stats');
-echo head(array(
-    'title' => $pageTitle,
-    'bodyclass' => 'stats browse',
-    'content_class' => 'horizontal-nav',
-));
-echo common('stats-nav');
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Stats\Api\Representation\StatRepresentation[] $resources
+ * @var \Stats\Api\Representation\StatRepresentation[] $stats
+ * @var \Stats\Api\Representation\HitRepresentation[] $hits
+ * @var string $userStatus
+ * @var int[] $years
+ * @var int $yearFilter
+ * @var int $monthFilter
+ */
+
+$plugins = $this->getHelperPluginManager();
+$assetUrl = $plugins->get('assetUrl');
+$translate = $plugins->get('translate');
+
+$this->headLink()->prependStylesheet($assetUrl('css/stats.css', 'Stats'));
+
+$this->htmlElement('body')->appendAttribute('class', 'stats browse');
 ?>
-<div id="primary">
-    <?php echo flash(); ?>
-    <p>
-        <strong><?php echo __('By Collection'); ?></strong>
-    </p>
+
+<?= $this->pageTitle($translate('Stats'), 1, $translate('By Collection')) ?>
+
+<?= $this->partial('common/stats-nav') ?>
 
 <form method="get">
     <select name="year">
-        <option value=""><?php echo __('All years'); ?></option>
+        <option value=""><?= $translate('All years') ?></option>
         <?php foreach ($years as $year): ?>
-            <option value="<?php echo $year; ?>" <?php if ($yearFilter == $year): ?>selected<?php endif; ?>><?php echo $year; ?></option>
+            <option value="<?= $year ?>" <?php if ($yearFilter == $year): ?>selected="selected"<?php endif; ?>><?= $year ?></option>
         <?php endforeach; ?>
     </select>
 
-    <?php $months = array(
-        __('January'),
-        __('February'),
-        __('March'),
-        __('April'),
-        __('May'),
-        __('June'),
-        __('July'),
-        __('August'),
-        __('September'),
-        __('October'),
-        __('November'),
-        __('December'),
-    ); ?>
+    <?php $months = [
+        $translate('January'),
+        $translate('February'),
+        $translate('March'),
+        $translate('April'),
+        $translate('May'),
+        $translate('June'),
+        $translate('July'),
+        $translate('August'),
+        $translate('September'),
+        $translate('October'),
+        $translate('November'),
+        $translate('December'),
+    ]; ?>
     <select name="month">
-        <option value=""><?php echo __('All months'); ?></option>
+        <option value=""><?= $translate('All months') ?></option>
         <?php foreach ($months as $i => $month): ?>
-            <option value="<?php echo $i + 1; ?>"<?php if ($monthFilter == $i + 1): ?>selected<?php endif; ?>><?php echo $month ?></option>
+            <option value="<?= $i + 1 ?>"<?php if ($monthFilter == $i + 1): ?>selected="selected"<?php endif; ?>><?= $month ?></option>
         <?php endforeach; ?>
     </select>
-    <button type="submit"><?php echo __('Filter'); ?></button>
+    <button type="submit"><?= $translate('Filter') ?></button>
 </form>
 
-<?php if ($total_results): ?>
+<?php if (count($stats)): ?>
     <table class="stats-table">
     <thead>
         <tr>
             <?php
-            $browseHeadings[__('Collection')] = 'collection';
-            $browseHeadings[__('Hits')] = 'hits';
-            if (plugin_is_active('CollectionTree')) {
-                $browseHeadings[__('Hits (including sub-collections)')] = 'hitsInclusive';
-            }
+            $browseHeadings[$translate('Item set')] = 'item-set';
+            $browseHeadings[$translate('Hits')] = 'hits';
             echo browse_sort_links($browseHeadings, array('link_tag' => 'th scope="col"', 'list_tag' => ''));
             ?>
         </tr>
     </thead>
     <tbody>
 <?php foreach ($hits as $position => $hit): ?>
-        <tr class="stats-stat <?php if ($position % 2 == 0) echo 'odd'; else echo 'even'; ?>">
-            <td class="stats-field"><?php echo $hit['collection']; ?></td>
-            <td class="stats-hits"><?php echo $hit['hits']; ?></td>
-            <?php if (plugin_is_active('CollectionTree')): ?>
-                <td class="stats-hitsinclusive"><?php echo $hit['hitsInclusive']; ?></td>
-            <?php endif; ?>
+        <tr class="stats-stat <?= $position % 2 === 0 ? 'odd' : 'even' ?>">
+            <td class="stats-field"><?= $hit->field('item-set') ?></td>
+            <td class="stats-hits"><?= $hit->totalPage() ?></td>
         </tr>
 <?php endforeach; ?>
     </tbody>
     </table>
 <?php else: ?>
     <br class="clear" />
-    <?php if (total_records('Hit') == 0): ?>
-        <h2><?php echo __('There is no hit yet.'); ?></h2>
+    <?php $totalHits = $this->api()->search('hits')->getTotalResults(); ?>
+    <?php if (!$totalHits): ?>
+        <h2><?= $translate('There is no hit yet.') ?></h2>
     <?php else: ?>
-        <p><?php echo __('The query searched %s hits and returned no results.', total_records('Hit')); ?></p>
-        <p><a href="<?php echo url('stats/browse/by-collection'); ?>"><?php echo __('See all stats.'); ?></a></p>
+        <p><?= $translate('The query searched %s hits and returned no results.', $totalHits); ?></p>
+        <p><a href="<?= $this->url('admin/stats/default', ['action' => 'by-collection'], true) ?>"><?= $translate('See all stats.') ?></a></p>
     <?php endif; ?>
 <?php endif; ?>
-</div>
-<?php echo foot(); ?>

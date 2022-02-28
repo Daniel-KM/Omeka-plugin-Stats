@@ -1,13 +1,25 @@
+<?php
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Stats\Api\Representation\StatRepresentation[] $result
+ * @var string $field
+ * @var string $userStatus
+ */
+
+$plugins = $this->getHelperPluginManager();
+$translate = $plugins->get('translate');
+?>
+
 <?php if (empty($result)): ?>
-<p><?php echo __('None'); ?></p>
+
+<p><?= $translate('None') ?></p>
+
 <?php else: ?>
+
 <ol>
-<?php foreach ($result as $position => $stat): ?>
-    <li><?php
-        echo __('%s (%d views)',
-            $stat[$field],
-            $stat['hits']);
-    ?></li>
-<?php endforeach; ?>
+    <?php foreach ($result as $position => $stat): ?>
+    <li><?= sprintf($translate('%s (%d views)'), $stat->field($field), $stat->totalHits($userStatus)) ?></li>
+    <?php endforeach; ?>
 </ol>
+
 <?php endif; ?>

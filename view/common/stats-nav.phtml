@@ -1,54 +1,39 @@
-<nav id="section-nav" class="navigation vertical">
 <?php
-    $navArray = array();
-    if (is_allowed('Stats_Summary', null)) {
-        $navArray[] = array(
-            'label' => __('Summary'),
-            'action' => 'index',
-            'controller' => 'summary',
-            'module' => 'stats',
-        );
-    }
-    if (is_allowed('Stats_Browse', 'by-page')) {
-        $navArray[] = array(
-            'label' => __('By Page'),
-            'action' => 'by-page',
-            'controller' => 'browse',
-            'module' => 'stats',
-        );
-    }
-    if (is_allowed('Stats_Browse', 'by-record')) {
-        $navArray[] = array(
-            'label' => __('By Record'),
-            'action' => 'by-record',
-            'controller' => 'browse',
-            'module' => 'stats',
-        );
-    }
-    if (is_allowed('Stats_Browse', 'by-download')) {
-        $navArray[] = array(
-            'label' => __('By Download'),
-            'action' => 'by-download',
-            'controller' => 'browse',
-            'module' => 'stats',
-        );
-    }
-    if (is_allowed('Stats_Browse', 'by-field')) {
-        $navArray[] = array(
-            'label' => __('By Field'),
-            'action' => 'by-field',
-            'controller' => 'browse',
-            'module' => 'stats',
-        );
-    }
-    if (is_allowed('Stats_Browse', 'by-collection')) {
-        $navArray[] = array(
-            'label' => __('By Collection'),
-            'action' => 'by-collection',
-            'controller' => 'browse',
-            'module' => 'stats',
-        );
-    }
-    echo nav($navArray, 'admin_navigation_settings');
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ */
+
+// @todo Use laminas navigation menu.
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$translate = $plugins->get('translate');
+$urlHelper = $plugins->get('url');
+
+$sectionNavs = [];
+if ($this->userIsAllowed('Statistics\Controller\Summary', 'index')) {
+    $sectionNavs[$urlHelper('admin/statistics')] = $translate('Summary');
+}
+if ($this->userIsAllowed('Statistics\Controller\Browse', 'by-page')) {
+    $sectionNavs[$urlHelper('admin/statistics/default', ['action' => 'by-page'])] = $translate('By page');
+    $sectionNavs[$urlHelper('admin/statistics/default', ['action' => 'by-resource'])] = $translate('By resource');
+    $sectionNavs[$urlHelper('admin/statistics/default', ['action' => 'by-download'])] = $translate('By download');
+    $sectionNavs[$urlHelper('admin/statistics/default', ['action' => 'by-field'])] = $translate('By field');
+    $sectionNavs[$urlHelper('admin/statistics/default', ['action' => 'by-item-set'])] = $translate('By item set');
+}
+if (empty($sectionNavs)) return;
+
+$currentUrl = $urlHelper(null, [], true);
+// Fix summary url.
+if (substr($currentUrl, -6) === '/index') $currentUrl = substr($currentUrl, 0, -6);
 ?>
+
+<nav class="section-nav">
+    <ul class="navigation">
+        <?php foreach ($sectionNavs as $url => $label): ?>
+        <li<?= $currentUrl === $url ? ' class="active"' : '' ?>">
+            <a href="<?= $url ?>"><?= $escape($label) ?></a>
+        </li>
+        <?php endforeach; ?>
+    </ul>
 </nav>

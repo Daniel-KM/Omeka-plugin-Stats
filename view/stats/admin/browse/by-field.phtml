@@ -1,20 +1,41 @@
 <?php
-$pageTitle = __('Stats (%s total)', $total_results);
-queue_css_file('stats');
-echo head(array(
-    'title' => $pageTitle,
-    'bodyclass' => 'stats browse',
-    'content_class' => 'horizontal-nav',
-));
-echo common('stats-nav');
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Stats\Api\Representation\StatRepresentation[] $resources
+ * @var \Stats\Api\Representation\StatRepresentation[] $stats
+ * @var \Stats\Api\Representation\HitRepresentation[] $hits
+ * @var string $userStatus
+ * @var int[] $years
+ * @var int $yearFilter
+ * @var int $monthFilter
+ */
+
+$plugins = $this->getHelperPluginManager();
+$assetUrl = $plugins->get('assetUrl');
+$translate = $plugins->get('translate');
+
+$this->headLink()->prependStylesheet($assetUrl('css/stats.css', 'Stats'));
+
+$this->htmlElement('body')->appendAttribute('class', 'stats browse');
+
+// TODO Add total results from pagination.
+
+// TODODOODODODODODOO
+
+$totalResults = 0;
 ?>
-<div id="primary">
-    <?php echo flash(); ?>
-    <p>
-        <strong><?php echo __('By %s (%s)', $label_field, $this->stats()->human_user_status($user_status)); ?></strong>
-        <em><?php echo ' ' . __('[%d filled values / %d total hits]', $total_not_empty, $total_hits); ?></em>
-    </p>
-    <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
+
+<?= $this->pageTitle($translate('Stats'), 1, sprintf($translate('Stats (%s total)'), $totalResults)) ?>
+
+<?= $this->partial('common/stats-nav') ?>
+
+<p>
+    <strong><?= $translate('By %s (%s)', $label_field, $this->stats()->human_user_status($user_status)); ?></strong>
+    <em><?php echo ' ' . $translate('[%d filled values / %d total hits]', $total_not_empty, $total_hits); ?></em>
+</p>
+
+<?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
+
 <?php if ($total_results):
     echo pagination_links();
     ?>
@@ -23,7 +44,7 @@ echo common('stats-nav');
         <tr>
             <?php
             $browseHeadings[$label_field] = $field;
-            $browseHeadings[__('Hits')] = 'hits';
+            $browseHeadings[$translate('Hits')] = 'hits';
             $browseHeadings['%'] = 'hits';
             echo browse_sort_links($browseHeadings, array('link_tag' => 'th scope="col"', 'list_tag' => ''));
             ?>
@@ -44,12 +65,10 @@ echo common('stats-nav');
 <?php else: ?>
     <br class="clear" />
     <?php if (total_records('Hit') == 0): ?>
-        <h2><?php echo __('There is no hit yet.'); ?></h2>
+        <h2><?= $translate('There is no hit yet.'); ?></h2>
     <?php else: ?>
-        <p><?php echo __('The query searched %s hits and returned no results.', total_records('Hit')); ?></p>
-        <p><a href="<?php echo url('stats/browse/by-' . $stats_type); ?>"><?php echo __('See all stats.'); ?></a></p>
+        <p><?= $translate('The query searched %s hits and returned no results.', total_records('Hit')); ?></p>
+        <p><a href="<?php echo url('stats/browse/by-' . $stats_type); ?>"><?= $translate('See all stats.'); ?></a></p>
     <?php endif; ?>
 <?php endif; ?>
     <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
-</div>
-<?php echo foot(); ?>

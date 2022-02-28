@@ -1,39 +1,43 @@
-<ul class="quick-filter-wrapper">
-    <li><a href="#" tabindex="0"><?php echo __('Quick Filter'); ?></a>
-    <ul class="dropdown">
-        <li><span class="quick-filter-heading"><?php echo __('Quick Filter') ?></span></li>
 <?php
-$base_url = 'stats/browse/by-' . $stats_type;
-switch ($stats_type):
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var string $type
+ */
+
+$plugins = $this->getHelperPluginManager();
+$url = $plugins->get('url');
+$translate = $plugins->get('translate');
+?>
+
+<ul class="quick-filter-wrapper">
+    <li><a href="#" tabindex="0"><?= $translate('Quick filter') ?></a>
+    <ul class="dropdown">
+        <li><span class="quick-filter-heading"><?= $translate('Quick filter') ?></span></li>
+<?php
+switch ($type):
     case 'page': ?>
-        <li><a href="<?php echo url($base_url); ?>"><?php echo __('View All') ?></a></li>
-        <li><a href="<?php echo url($base_url, array('has_record' => true)); ?>"><?php echo __('With record') ?></a></li>
-        <li><a href="<?php echo url($base_url, array('has_record' => false)); ?>"><?php echo __('Without record') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-page'], true) ?>"><?= $translate('View all') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-page'], ['query' => ['has_resource' => true]], true) ?>"><?= $translate('With resource') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-page'], ['query' => ['has_resource' => false]], true) ?>"><?= $translate('Without resource') ?></a></li>
         <?php break;
 
-    case 'record': ?>
-        <li><a href="<?php echo url($base_url); ?>"><?php echo __('View All') ?></a></li>
-        <li><a href="<?php echo url($base_url, array('record_type' => 'Item')); ?>"><?php echo __('By Item'); ?></a></li>
-        <li><a href="<?php echo url($base_url, array('record_type' => 'Collection')); ?>"><?php echo __('By Collection'); ?></a></li>
-        <li><a href="<?php echo url($base_url, array('record_type' => 'File')); ?>"><?php echo __('By File'); ?></a></li>
-        <?php if (plugin_is_active('SimplePages')): ?>
-        <li><a href="<?php echo url($base_url, array('record_type' => 'SimplePagesPage')); ?>"><?php echo __('By Simple Page'); ?></a></li>
-        <?php endif; ?>
-        <?php if (plugin_is_active('ExhibitBuilder')): ?>
-        <li><a href="<?php echo url($base_url, array('record_type' => 'Exhibit')); ?>"><?php echo __('By Exhibit'); ?></a></li>
-        <li><a href="<?php echo url($base_url, array('record_type' => 'ExhibitPage')); ?>"><?php echo __('By Exhibit Page'); ?></a></li>
-        <?php endif; ?>
+    case 'resource': ?>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-resource'], true) ?>"><?= $translate('View all') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-resource'], ['query' => ['resource_type' => 'items']], true) ?>"><?= $translate('By item') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-resource'], ['query' => ['resource_type' => 'item_sets']], true) ?>"><?= $translate('By item set') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-resource'], ['query' => ['resource_type' => 'media']], true) ?>"><?= $translate('By media') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-resource'], ['query' => ['resource_type' => 'site_pages']], true) ?>"><?= $translate('By page') ?></a></li>
         <?php break;
 
     case 'download': ?>
-        <li><a href="<?php echo url($base_url); ?>"><?php echo __('View All') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-download'], true) ?>"><?= $translate('View all') ?></a></li>
         <?php break;
 
     case 'field': ?>
-        <li><a href="<?php echo url($base_url, array('field' => 'referrer')); ?>"><?php echo __('Referrers'); ?></a></li>
-        <li><a href="<?php echo url($base_url, array('field' => 'query')); ?>"><?php echo __('Queries'); ?></a></li>
-        <li><a href="<?php echo url($base_url, array('field' => 'accept_language')); ?>"><?php echo __('Languages'); ?></a></li>
-        <li><a href="<?php echo url($base_url, array('field' => 'user_agent')); ?>"><?php echo __('Browsers'); ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-field'], ['query' => ['field' => 'referrer']], true) ?>"><?= $translate('Referrers') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-field'], ['query' => ['field' => 'query']], true)  ?>"><?= $translate('Queries') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-field'], ['query' => ['field' => 'accept_language']], true)  ?>"><?= $translate('Languages') ?></a></li>
+        <li><a href="<?= $url('admin/stat/default', ['action' => 'by-field'], ['query' => ['field' => 'user_agent']], true) ?>"><?= $translate('Browsers') ?></a></li>
         <?php break;
 endswitch; ?>
     </ul>

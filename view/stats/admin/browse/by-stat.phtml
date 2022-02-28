@@ -1,81 +1,117 @@
 <?php
-$pageTitle = __('Stats (%s total)', $total_results);
-queue_css_file('stats');
-echo head(array(
-    'title' => $pageTitle,
-    'bodyclass' => 'stats browse',
-    'content_class' => 'horizontal-nav',
-));
-echo common('stats-nav');
+/**
+ * @var \Laminas\View\Renderer\PhpRenderer $this
+ * @var \Stats\Api\Representation\StatRepresentation[] $stats
+ * @var string $userStatus
+ * @var string $type
+ *
+ * @todo Add the basePath to the hit url.
+ */
+
+$plugins = $this->getHelperPluginManager();
+$escape = $plugins->get('escapeHtml');
+$assetUrl = $plugins->get('assetUrl');
+$translate = $plugins->get('translate');
+$urlHelper = $plugins->get('url');
+$escapeAttr = $plugins->get('escapeHtmlAttr');
+
+$this->headLink()->prependStylesheet($assetUrl('css/stats.css', 'Stats'));
+
+$this->htmlElement('body')->appendAttribute('class', 'stats browse');
+
+$totalResults = $this->pagination()->getPaginator()->getTotalCount();
+$currentPage = $this->params()->fromQuery('page');
+$limit = $this->setting('pagination_per_page', 100);
+$currentUrl = $urlHelper(null, [], true);
+$basePath = $this->basePath();
+$resource = null;
 ?>
-<div id="primary">
-    <?php echo flash(); ?>
-    <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
-<?php if ($total_results):
-    echo pagination_links();
-    ?>
-    <table class="stats-table">
+
+<?= $this->pageTitle(sprintf($translate('Stats (%s total)'), $totalResults), 1, $translate('Statistics')) ?>
+
+<?= $this->partial('common/stats-nav') ?>
+
+<?php if ($stats): ?>
+<div class="browse-controls">
+    <?= $pagination = $this->pagination(null, $totalResults, $currentPage, $limit) ?>
+    <?php //= $this->hyperlink($translate('Advanced search'), $urlHelper(null, ['action' => 'search'], ['query' => $this->params()->fromQuery()], true), ['class' => 'advanced-search']) ?>
+    <?= $this->partial('common/quick-filters') ?>
+    <?php // echo $this->sortSelector($sortHeadings); ?>
+</div>
+<table class="tablesaw stats-table" data-tablesaw-mode="stack">
     <thead>
         <tr>
-            <?php
-            $browseHeadings[__('Page')] = 'url';
-            $browseHeadings[__('Hits')] = 'hits';
-            $browseHeadings[__('Anonymous')] = 'hits_anonymous';
-            $browseHeadings[__('Identified')] = 'hits_identified';
-            $browseHeadings[__('Dedicated Record')] = null;
-            $browseHeadings[__('Record Type')] = 'record_type';
-            $browseHeadings[__('Date')] = 'modified';
-            echo browse_sort_links($browseHeadings, array('link_tag' => 'th', 'link_attr' => array('scope' => 'col'), 'list_tag' => ''));
-            ?>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=url' ?>"><?= $translate('Page') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=hits' ?>"><?= $translate('Hits') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=anonymous' ?>"><?= $translate('Anonymous') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=identified' ?>"><?= $translate('Identified') ?></a>
+            </th>
+            <th>
+                <span><?= $translate('Dedicated resource') ?></span>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=resource_type' ?>"><?= $translate('Record type') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=modified' ?>"><?= $translate('Date') ?></a>
+            </th>
+            <th>
+                <a href="<?= $currentUrl . '?sort_by=hits' ?>"><?= $translate('Hits') ?></a>
+            </th>
         </tr>
     </thead>
     <tbody>
-        <?php $key = 0; ?>
-        <?php foreach (loop('stats') as $stat): ?>
-        <tr class="stats-stat <?php if (++$key % 2 == 1) echo 'odd'; else echo 'even'; ?>">
+        <?php foreach ($stats as $stat): ?>
+        <tr class="stats-stat">
             <td class="stats-url">
                 <div class="stats-hover">
-                    <a href="<?php echo WEB_ROOT . $stat->url; ?>"><?php echo $stat->url; ?></a>
+                    <a href="<?= $escapeAttr($basePath . $stat->hitUrl()) ?>"><?= $escape($stat->hitUrl()) ?></a>
                 </div>
             </td>
             <td class="stats-hits">
-                <?php echo $stat->hits; ?>
+                <?= $stat->totalHits() ?>
             </td>
             <td class="stats-hits stats-anonymous">
-                <?php echo $stat->hits_anonymous; ?>
+                <?= $stat->totalHits('anonymous') ?>
             </td>
             <td class="stats-hits stats-identified">
-                <?php echo $stat->hits_identified; ?>
+                <?= $stat->totalHits('identified') ?>
             </td>
-            <td class="stats-record">
-                <?php if ($stat->hasRecord()): ?>
+            <td class="stats-resource">
+                <?php if ($stat->hasResource()): ?>
                 <div class="stats-hover">
-                    <?php echo $this->stats()->link_to_record($stat->Record); ?>
+                    <?= ($resource = $stat->entityResource()) ? $resource->linkPretty() : sprintf('%s #%s (unavailable)', $translate($stat->entityName()), $stat->entityName()) ?>
                 </div>
                 <?php endif; ?>
             </td>
             <td class="stats-record-type">
-                <?php if ($stat->hasRecord()):
-                    echo $stat->getHumanRecordType();
-                endif; ?>
+                <?php if ($stat->hasResource()): ?>
+                    <?= $stat->getHumanResourceType() ?>
+                <?php endif; ?>
             </td>
             <td>
-                <?php echo html_escape(format_date($stat->modified, Zend_Date::DATETIME_SHORT)); ?>
+                <?= $escape($stat->modified()->format('YYYY-MM-dd HH:mm:ss')) ?>
             </td>
         </tr>
         <?php endforeach; ?>
     </tbody>
     </table>
-    <?php echo pagination_links(); ?>
+    <?= $pagination ?>
 <?php else: ?>
-    <br class="clear" />
-    <?php if (total_records('Stat') == 0): ?>
-        <h2><?php echo __('There is no stat yet.'); ?></h2>
+    <?php $totalStats = $this->api()->search('stats')->getTotalResults(); ?>
+    <div class="no-resources">
+    <?php if (!$totalStats): ?>
+        <p><?= $translate('Omeka could not find any stats.') ?></p>
     <?php else: ?>
-        <p><?php echo __('The query searched %s rows and returned no results.', total_records('Stat')); ?></p>
-        <p><a href="<?php echo url('stats/browse/by-' . $stats_type); ?>"><?php echo __('See all stats.'); ?></a></p>
+        <p><?= sprintf($translate('The query searched %s rows and returned no results.'), $totalStats) ?></p>
+        <p><a href="<?= url('admin/stats/default', ['action' => 'by-' . $type], true) ?>"><?= $translate('See all stats.') ?></a></p>
     <?php endif; ?>
+    </div>
 <?php endif; ?>
-    <?php echo common('quick-filters', array('stats_type' => $stats_type)); ?>
-</div>
-<?php echo foot(); ?>
