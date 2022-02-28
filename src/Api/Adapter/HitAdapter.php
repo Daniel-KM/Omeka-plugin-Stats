@@ -169,7 +169,6 @@ class HitAdapter extends AbstractEntityAdapter
             }
         }
 
-        // TODO There is a special filter for field "referrer": "NOT LIKE ?", WEB_ROOT . '/%'." (it allows to get external referrer only).
         if (isset($query['referrer'])) {
             if (is_array($query['referrer'])) {
                 $qb->andWhere($expr->in(
@@ -182,6 +181,15 @@ class HitAdapter extends AbstractEntityAdapter
                     $this->createNamedParameter($qb, $query['referrer'])
                 ));
             }
+            // This special filter allows to get external referrers only.
+            $serverUrlHelper = $this->serviceLocator->get('ViewHelperManager')->get('ServerUrl');
+            $baseUrlPath = $this->serviceLocator->get('Router')->getBaseUrl();
+            $webRootLike = $serverUrlHelper($baseUrlPath ? $baseUrlPath . '/%' : '/%');
+            $qb
+                ->andWhere($expr->notLike(
+                    'omeka_root.referrer',
+                    $this->createNamedParameter($qb, $webRootLike)
+                ));
         }
 
         if (isset($query['user_agent'])) {
@@ -209,6 +217,35 @@ class HitAdapter extends AbstractEntityAdapter
                     'omeka_root.acceptLanguage',
                     $this->createNamedParameter($qb, $query['accept_language'])
                 ));
+            }
+        }
+
+        if (isset($query['field'])
+            && in_array($query['field'], ['query', 'referrer', 'user_agent', 'accept_language', 'userAgent', 'acceptLanguage'])
+        ) {
+            $columns = [
+                'query' => 'query',
+                'referrer' => 'referrer',
+                'user_agent' => 'userAgent',
+                'accept_language' => 'acceptLanguage',
+                'userAgent' => 'userAgent',
+                'acceptLanguage' => 'acceptLanguage',
+            ];
+            $field = $columns[$query['field']];
+            $qb->andWhere($expr->neq(
+                'omeka_root.' . $field,
+                $this->createNamedParameter($qb, '')
+            ));
+            if ($field === 'referrer') {
+                // This special filter allows to get external referrers only.
+                $serverUrlHelper = $this->serviceLocator->get('ViewHelperManager')->get('ServerUrl');
+                $baseUrlPath = $this->serviceLocator->get('Router')->getBaseUrl();
+                $webRootLike = $serverUrlHelper($baseUrlPath ? $baseUrlPath . '/%' : '/%');
+                $qb
+                    ->andWhere($expr->notLike(
+                        'omeka_root.referrer',
+                        $this->createNamedParameter($qb, $webRootLike)
+                    ));
             }
         }
 
